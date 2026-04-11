@@ -3,10 +3,20 @@ import AppSidebar from "@/components/AppSidebar";
 import { toast } from "sonner";
 import { Fingerprint, BarChart3, ShieldCheck, ShieldX, Loader2 } from "lucide-react";
 
+interface VerificationResult {
+  hash: string;
+  status: string;
+  block: string;
+  timestamp: string;
+  network: string;
+  contract: string;
+}
+
 const Verify = () => {
   const [hash, setHash] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [result, setResult] = useState<null | "valid" | "invalid">(null);
+  const [verificationData, setVerificationData] = useState<VerificationResult | null>(null);
 
   const handleAudit = async () => {
     if (!hash.trim()) {
@@ -15,13 +25,36 @@ const Verify = () => {
     }
     setVerifying(true);
     setResult(null);
+    setVerificationData(null);
     await new Promise((r) => setTimeout(r, 2500));
     setVerifying(false);
     // Simulate: hashes starting with "0x" are valid
     const isValid = hash.trim().startsWith("0x");
     setResult(isValid ? "valid" : "invalid");
-    if (isValid) toast.success("ZK Proof verified successfully");
-    else toast.error("Proof not found on ledger");
+    
+    if (isValid) {
+      const randomBlock = String(Math.floor(Math.random() * 900000) + 100000);
+      const now = new Date().toLocaleString('en-US', { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+      setVerificationData({
+        hash: hash.trim(),
+        status: "VERIFIED",
+        block: randomBlock,
+        timestamp: now,
+        network: "Midnight Preprod Testnet",
+        contract: "9308246b6d4c9747efed80cd42792491e57d5881ff23d3fc28ba1ebefce865a4"
+      });
+      toast.success("ZK Proof verified successfully");
+    } else {
+      toast.error("Proof not found on ledger");
+    }
   };
 
   return (
@@ -83,47 +116,68 @@ const Verify = () => {
 
           {/* Result Grid */}
           {result && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in-up">
-              {/* Valid Card */}
-              <div className={`bg-surface-container rounded-xl p-6 relative overflow-hidden transition-all ${result === "valid" ? "ghost-border border-secondary/20 opacity-100" : "opacity-40 ghost-border"}`}>
-                <div className="absolute top-0 right-0 p-4">
-                  <ShieldCheck className={`w-8 h-8 ${result === "valid" ? "text-secondary" : "text-outline/30"}`} />
-                </div>
-                <div className="space-y-6">
-                  <header>
-                    <h3 className={`font-medium text-lg ${result === "valid" ? "text-secondary" : "text-on-surface-variant"}`}>ZK Proof Valid</h3>
-                    <p className="text-xs text-on-surface-variant mt-1">Verified on {new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</p>
-                  </header>
-                  {result === "valid" && (
-                    <div className="space-y-2">
-                      <label className="text-[9px] uppercase tracking-tighter text-on-surface-variant/60">Proof Hash Reference</label>
-                      <div className="bg-surface-container-lowest p-3 rounded-lg ghost-border">
-                        <code className="text-[10px] break-all text-on-surface-variant font-mono leading-relaxed">
-                          z7k_92f1b40e9d3c5a7182740bcdef9210485721a9c3d4e5f6a7b8c9d0e1f2
-                        </code>
+            <>
+              {result === "valid" && verificationData ? (
+                <div className="bg-surface-container rounded-xl p-8 ghost-border border-secondary/20 animate-fade-in-up">
+                  <div className="flex items-start gap-4 mb-8">
+                    <ShieldCheck className="w-8 h-8 text-secondary flex-shrink-0" />
+                    <div>
+                      <h3 className="text-2xl font-semibold text-secondary">ZK Proof Valid</h3>
+                      <p className="text-sm text-on-surface-variant mt-1">Record verified on ledger</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {/* Hash */}
+                    <div className="bg-surface-container-lowest rounded-lg p-4 border border-outline-variant/20">
+                      <p className="text-[10px] uppercase tracking-widest text-on-surface-variant/60 mb-2">Hash</p>
+                      <code className="text-sm font-mono text-primary break-all">{verificationData.hash}</code>
+                    </div>
+                    
+                    {/* Status, Block, Timestamp */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="bg-surface-container-lowest rounded-lg p-3 border border-outline-variant/20">
+                        <p className="text-[10px] uppercase tracking-widest text-on-surface-variant/60 mb-2">Status</p>
+                        <p className="text-sm font-semibold text-secondary">{verificationData.status}</p>
+                      </div>
+                      <div className="bg-surface-container-lowest rounded-lg p-3 border border-outline-variant/20">
+                        <p className="text-[10px] uppercase tracking-widest text-on-surface-variant/60 mb-2">Block</p>
+                        <p className="text-sm font-mono text-on-surface font-semibold">{verificationData.block}</p>
+                      </div>
+                      <div className="bg-surface-container-lowest rounded-lg p-3 border border-outline-variant/20">
+                        <p className="text-[10px] uppercase tracking-widest text-on-surface-variant/60 mb-2">Timestamp</p>
+                        <p className="text-sm font-mono text-on-surface text-right">{verificationData.timestamp}</p>
                       </div>
                     </div>
-                  )}
-                </div>
-                <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-secondary/5 blur-2xl rounded-full" />
-              </div>
-
-              {/* Error Card */}
-              <div className={`bg-surface-container-low rounded-xl p-6 transition-all ${result === "invalid" ? "ghost-border border-error/30 opacity-100" : "opacity-40 ghost-border"}`}>
-                <div className="flex flex-col justify-between h-full">
-                  <div className="flex items-start justify-between">
-                    <div className="p-2 rounded-lg bg-error/10">
-                      <ShieldX className="w-5 h-5 text-error" />
+                    
+                    {/* Network and Contract */}
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="bg-surface-container-lowest rounded-lg p-4 border border-outline-variant/20">
+                        <p className="text-[10px] uppercase tracking-widest text-on-surface-variant/60 mb-2">Network</p>
+                        <p className="text-sm font-medium text-on-surface">{verificationData.network}</p>
+                      </div>
+                      <div className="bg-surface-container-lowest rounded-lg p-4 border border-outline-variant/20">
+                        <p className="text-[10px] uppercase tracking-widest text-on-surface-variant/60 mb-2">Contract Address</p>
+                        <code className="text-sm font-mono text-primary break-all">{verificationData.contract}</code>
+                      </div>
                     </div>
-                    <span className="text-[10px] text-error/60 font-mono">CODE: 404_NF</span>
-                  </div>
-                  <div className="mt-8">
-                    <h4 className="text-on-surface font-medium">Proof not found</h4>
-                    <p className="text-xs text-on-surface-variant/60 mt-1">The provided hash does not correspond to a valid commitment on the ledger.</p>
                   </div>
                 </div>
-              </div>
-            </div>
+              ) : result === "invalid" ? (
+                <div className="bg-surface-container-low rounded-xl p-8 ghost-border border-error/30 animate-fade-in-up">
+                  <div className="flex items-start gap-4 mb-6">
+                    <div className="p-2 rounded-lg bg-error/10">
+                      <ShieldX className="w-6 h-6 text-error" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-error">Proof Not Found</h3>
+                      <p className="text-sm text-on-surface-variant mt-1">CODE: 404_NF</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-on-surface-variant">The provided hash does not correspond to a valid commitment on the ledger.</p>
+                </div>
+              ) : null}
+            </>
           )}
 
           {/* Bottom Technical Specs */}

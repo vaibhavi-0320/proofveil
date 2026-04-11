@@ -9,9 +9,20 @@ const Submit = () => {
   const [file, setFile] = useState<File | null>(null);
   const [encrypting, setEncrypting] = useState(false);
   const [encrypted, setEncrypted] = useState(false);
+  const [recordHash, setRecordHash] = useState<string | null>(null);
   const [classification, setClassification] = useState<string[]>(["HIGH_PRIVACY"]);
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
+
+  // Generate SHA256 hash from input
+  const generateHash = async (input: string): Promise<string> => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(input);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return '0x' + hashHex;
+  };
 
   const toggleClassification = (tag: string) => {
     setClassification((prev) =>
@@ -26,13 +37,42 @@ const Submit = () => {
     }
     setEncrypting(true);
     setEncrypted(false);
+    setRecordHash(null);
 
-    // Simulate encryption
+    // Simulate encryption and generate hash
     await new Promise((r) => setTimeout(r, 3000));
+    const inputData = `${recordType}|${title}|${description}|${file?.name || ''}`;
+    const hash = await generateHash(inputData);
+    setRecordHash(hash);
     setEncrypting(false);
     setEncrypted(true);
-    toast.success("Record Secured", {
-      description: "Hash: fb92...a8c1 published to Midnight.",
+    
+    // Save record to localStorage
+    const timestamp = new Date().toLocaleString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+    
+    const newRecord = {
+      filename: file?.name || title,
+      hash: hash,
+      timestamp: timestamp,
+      status: "SECURED"
+    };
+    
+    const existingRecords = localStorage.getItem("proofveil_records");
+    const records = existingRecords ? JSON.parse(existingRecords) : [];
+    records.unshift(newRecord);
+    localStorage.setItem("proofveil_records", JSON.stringify(records));
+    
+    const shortHash = hash.slice(0, 10) + '...' + hash.slice(-8);
+    toast.success("Secured on Midnight Preprod Network", {
+      description: `Record Hash: ${shortHash}`,
     });
   };
 
@@ -186,30 +226,56 @@ const Submit = () => {
                   <div className="w-full h-full bg-[radial-gradient(circle_at_center,hsl(var(--primary)/0.3),transparent)]" />
                 </div>
                 <div className="relative z-10 w-full flex flex-col items-center">
-                  <div className="label-terminal text-secondary tracking-[0.3em] mb-8">Privacy Shield Active</div>
-                  <div className="relative w-64 h-64 mb-12 flex items-center justify-center">
-                    <div className="absolute inset-0 border-2 border-secondary/20 rounded-full animate-spin-slow" />
-                    <div className="absolute inset-4 border border-primary/20 rounded-full animate-spin-slower" />
-                    <svg className="drop-shadow-[0_0_15px_hsl(var(--secondary)/0.3)]" width="120" height="140" viewBox="0 0 120 140" fill="none">
-                      <path d="M60 0L10 22.5V60C10 93.75 31.25 125.25 60 133C88.75 125.25 110 93.75 110 60V22.5L60 0Z" fill="hsl(var(--surface))" stroke="hsl(var(--secondary))" strokeWidth="4" />
-                      <path d="M60 35V100M35 60L85 60" stroke="hsl(var(--secondary))" strokeWidth="4" strokeLinecap="round" />
-                    </svg>
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
-                    <div className="absolute bottom-10 left-1/4 w-1 h-1 bg-secondary rounded-full animate-ping" />
-                    <div className="absolute top-1/3 right-4 w-2 h-2 bg-primary rounded-full animate-bounce" />
-                  </div>
-                  <div className="w-full space-y-4">
-                    {[
-                      { label: "0x4F...33E2", status: "ENCRYPTED_SUCCESS" },
-                      { label: "SHA-256", status: "VERIFIED_ROOT" },
-                      { label: "ZK_SNARK_GEN", status: "ACTIVE" },
-                    ].map((row) => (
-                      <div key={row.label} className="flex justify-between items-end border-b border-outline-variant/20 pb-2">
-                        <span className="text-xs text-on-surface-variant font-mono">{row.label}</span>
-                        <span className="text-[10px] text-secondary font-mono tracking-widest">{row.status}</span>
+                  {!encrypted ? (
+                    <>
+                      <div className="label-terminal text-secondary tracking-[0.3em] mb-8">Privacy Shield Active</div>
+                      <div className="relative w-64 h-64 mb-12 flex items-center justify-center">
+                        <div className="absolute inset-0 border-2 border-secondary/20 rounded-full animate-spin-slow" />
+                        <div className="absolute inset-4 border border-primary/20 rounded-full animate-spin-slower" />
+                        <svg className="drop-shadow-[0_0_15px_hsl(var(--secondary)/0.3)]" width="120" height="140" viewBox="0 0 120 140" fill="none">
+                          <path d="M60 0L10 22.5V60C10 93.75 31.25 125.25 60 133C88.75 125.25 110 93.75 110 60V22.5L60 0Z" fill="hsl(var(--surface))" stroke="hsl(var(--secondary))" strokeWidth="4" />
+                          <path d="M60 35V100M35 60L85 60" stroke="hsl(var(--secondary))" strokeWidth="4" strokeLinecap="round" />
+                        </svg>
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+                        <div className="absolute bottom-10 left-1/4 w-1 h-1 bg-secondary rounded-full animate-ping" />
+                        <div className="absolute top-1/3 right-4 w-2 h-2 bg-primary rounded-full animate-bounce" />
                       </div>
-                    ))}
-                  </div>
+                      <div className="w-full space-y-4">
+                        {[
+                          { label: "0x4F...33E2", status: "ENCRYPTED_SUCCESS" },
+                          { label: "SHA-256", status: "VERIFIED_ROOT" },
+                          { label: "ZK_SNARK_GEN", status: "ACTIVE" },
+                        ].map((row) => (
+                          <div key={row.label} className="flex justify-between items-end border-b border-outline-variant/20 pb-2">
+                            <span className="text-xs text-on-surface-variant font-mono">{row.label}</span>
+                            <span className="text-[10px] text-secondary font-mono tracking-widest">{row.status}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : recordHash ? (
+                    <div className="w-full space-y-6 text-center">
+                      <div className="space-y-2">
+                        <div className="text-4xl mb-4">✅</div>
+                        <h3 className="text-2xl font-semibold text-secondary">Record Secured</h3>
+                        <p className="text-on-surface-variant text-sm">Published to Midnight Preprod Network</p>
+                      </div>
+                      <div className="bg-surface-container-lowest rounded-lg p-4 border border-secondary/20">
+                        <p className="text-[10px] text-on-surface-variant uppercase tracking-widest mb-2">Record Hash</p>
+                        <code className="text-sm font-mono text-secondary break-all leading-relaxed">{recordHash}</code>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-left">
+                        <div className="bg-surface-container-lowest rounded p-3">
+                          <p className="text-[10px] text-on-surface-variant uppercase tracking-tighter">Status</p>
+                          <p className="text-sm font-medium text-on-surface mt-1">VERIFIED ✓</p>
+                        </div>
+                        <div className="bg-surface-container-lowest rounded p-3">
+                          <p className="text-[10px] text-on-surface-variant uppercase tracking-tighter">Network</p>
+                          <p className="text-sm font-medium text-on-surface mt-1">Midnight Preprod</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
 

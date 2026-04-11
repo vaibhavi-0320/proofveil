@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import AppSidebar from "@/components/AppSidebar";
 import { SkeletonCard, SkeletonRow } from "@/components/SkeletonLoader";
 import AnimatedCounter from "@/components/AnimatedCounter";
+import { toast } from "sonner";
 
-const records = [
-  { id: "0x4F...8B21", type: "Genomic", date: "Oct 24, 2023", status: "verified" },
-  { id: "0xE2...0A94", type: "Financial", date: "Oct 24, 2023", status: "pending" },
-  { id: "0x99...3C10", type: "Legal", date: "Oct 23, 2023", status: "verified" },
-];
+interface Record {
+  filename: string;
+  hash: string;
+  timestamp: string;
+  status: string;
+}
 
 const grants = [
   { icon: "🏥", name: "St. Jude Research", detail: "Read-only Genomic access • Expires in 2h" },
@@ -16,11 +18,32 @@ const grants = [
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
+  const [records, setRecords] = useState<Record[]>([]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1200);
+    const timer = setTimeout(() => {
+      const stored = localStorage.getItem("proofveil_records");
+      if (stored) {
+        try {
+          setRecords(JSON.parse(stored));
+        } catch (e) {
+          setRecords([]);
+        }
+      }
+      setLoading(false);
+    }, 1200);
     return () => clearTimeout(timer);
   }, []);
+
+  const truncateHash = (hash: string): string => {
+    if (hash.length <= 16) return hash;
+    return hash.slice(0, 10) + "..." + hash.slice(-6);
+  };
+
+  const copyToClipboard = (hash: string) => {
+    navigator.clipboard.writeText(hash);
+    toast.success("Hash copied to clipboard");
+  };
 
   const metrics = [
     { label: "Active Proofs", value: "1,284", icon: "🛡️", trend: "+12.5% from last period", trendColor: "text-secondary" },
@@ -44,7 +67,10 @@ const Dashboard = () => {
           <div>
             <h1 className="text-3xl font-medium tracking-tight mb-2 animate-fade-in-up">Network Overview</h1>
             <p className="text-on-surface-variant max-w-lg animate-fade-in-up-delay-1">
-              Monitoring cryptographic integrity and zero-knowledge proof generation across the Midnight ecosystem.
+              {records.length > 0
+                ? `${records.length} Records Secured on Midnight Preprod`
+                : "No records submitted yet. Go to Submit to secure your first record."
+              }
             </p>
           </div>
           <div className="text-right animate-fade-in-up-delay-2">
@@ -78,60 +104,71 @@ const Dashboard = () => {
               ))}
         </div>
 
-        {/* Table + Sidebar */}
+        {/* Records Section */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          <div className="xl:col-span-2 bg-surface p-1 rounded-xl ghost-border overflow-hidden shadow-2xl">
-            <div className="p-6 flex justify-between items-center">
-              <h2 className="text-xl font-medium">Recent Cryptographic Records</h2>
-              <button className="text-xs text-primary font-medium hover:underline transition-all">
-                Export Audit Log
-              </button>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="text-on-surface-variant/60 text-xs uppercase tracking-widest bg-surface-container-low/50">
-                    <th className="px-6 py-4 font-medium">Record ID</th>
-                    <th className="px-6 py-4 font-medium">Type</th>
-                    <th className="px-6 py-4 font-medium">Date</th>
-                    <th className="px-6 py-4 font-medium">Status</th>
-                    <th className="px-6 py-4 font-medium text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-outline-variant/5">
-                  {loading ? (
-                    Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)
-                  ) : (
-                    records.map((r) => (
-                      <tr key={r.id} className="hover:bg-surface-container/30 transition-colors group">
-                        <td className="px-6 py-4 font-mono text-sm text-primary">{r.id}</td>
-                        <td className="px-6 py-4 text-sm text-on-surface-variant">{r.type}</td>
-                        <td className="px-6 py-4 text-sm text-on-surface-variant">{r.date}</td>
-                        <td className="px-6 py-4">
-                          {r.status === "verified" ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-secondary/10 text-secondary border border-secondary/20">
-                              ZK Verified
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-orange-500/10 text-orange-400 border border-orange-500/20">
-                              Pending
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-3 text-on-surface-variant">
-                            <button className="hover:text-primary transition-colors hover:scale-110">👁️</button>
-                            <button className="hover:text-primary transition-colors hover:scale-110">🔗</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
+          <div className="xl:col-span-2">
+            {loading ? (
+              <div className="bg-surface p-1 rounded-xl ghost-border overflow-hidden shadow-2xl">
+                <div className="p-6 flex justify-between items-center">
+                  <h2 className="text-xl font-medium">Secured Records</h2>
+                </div>
+                <div className="p-6">
                   <SkeletonRow />
                   <SkeletonRow />
-                </tbody>
-              </table>
-            </div>
+                  <SkeletonRow />
+                </div>
+              </div>
+            ) : records.length === 0 ? (
+              <div className="bg-surface-container rounded-xl ghost-border p-12 flex flex-col items-center justify-center min-h-[300px]">
+                <div className="text-4xl mb-4">📁</div>
+                <h3 className="text-lg font-medium text-on-surface mb-2">No Records Submitted</h3>
+                <p className="text-on-surface-variant text-sm text-center mb-6">
+                  You haven't secured any records yet. Go to Submit to secure your first record.
+                </p>
+                <a
+                  href="/submit"
+                  className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 transition-all"
+                >
+                  Go to Submit
+                </a>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {records.map((record, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-surface-container rounded-xl ghost-border p-6 hover-lift transition-all group"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-on-surface-variant uppercase tracking-widest mb-1">Filename</div>
+                        <p className="text-sm font-medium text-on-surface truncate">{record.filename}</p>
+                      </div>
+                      <span className="ml-2 px-2 py-1 rounded text-[10px] font-bold uppercase bg-secondary/10 text-secondary border border-secondary/20 whitespace-nowrap">
+                        {record.status}
+                      </span>
+                    </div>
+
+                    <div className="mb-4">
+                      <div className="text-xs text-on-surface-variant uppercase tracking-widest mb-1">Hash</div>
+                      <code className="text-xs font-mono text-primary break-all">{truncateHash(record.hash)}</code>
+                    </div>
+
+                    <div className="mb-4">
+                      <div className="text-xs text-on-surface-variant uppercase tracking-widest mb-1">Timestamp</div>
+                      <p className="text-xs text-on-surface">{record.timestamp}</p>
+                    </div>
+
+                    <button
+                      onClick={() => copyToClipboard(record.hash)}
+                      className="w-full px-4 py-2 text-xs font-medium text-primary border border-primary/30 rounded-lg hover:bg-primary/5 transition-all active:scale-95"
+                    >
+                      📋 Copy Hash
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-6">

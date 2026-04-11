@@ -82,7 +82,7 @@ Connect your Midnight Lace wallet → Submit a document → Get a SHA-256 proof 
  
 <div align="center">
  
-**[▶ Watch the full demo walkthrough](#)**
+**[▶ Watch the full demo walkthrough](https://www.loom.com/share/0f142365d8a449e88ebf015f17c7834e)**
  
 </div>
  
@@ -101,7 +101,7 @@ The demo covers every part of the working application:
  
 <div align="center">
  
-**[▶ View Presentation Slides](#)**
+**[▶ View Presentation Slides](https://docs.google.com/presentation/d/1VYTKVpM2CvhLRq6fH_V5ze996grY00ZoNPpNyMKzoac/edit?usp=sharing)**
  
 </div>
  
@@ -313,8 +313,8 @@ npm run dev
 | :-: | :--- |
 | 🔴 Live App | [proofveil.vercel.app](https://proofveil.vercel.app) |
 | 📜 Smart Contract | [Midnight Preview Explorer](https://explorer.midnight-ntwrk.preview.midnight.network/contracts/8d847cc316c8a4ac838da90f21d363aed24915cb2a9e607c1fd2741bd8d61dad) |
-| 🎬 Demo Video | [Watch Demo](#) |
-| 📑 Slide Deck | [View Slides](#) |
+| 🎬 Demo Video | [Watch Demo](https://www.loom.com/share/0f142365d8a449e88ebf015f17c7834e) |
+| 📑 Slide Deck | [View Slides](https://docs.google.com/presentation/d/1VYTKVpM2CvhLRq6fH_V5ze996grY00ZoNPpNyMKzoac/edit?usp=sharing) |
 | 🐙 GitHub | [vaibhavi-0320/proofveil](https://github.com/vaibhavi-0320/proofveil) |
 | 📚 Midnight Docs | [docs.midnight.network](https://docs.midnight.network) |
 | 👛 Lace Wallet | [lace.io](https://www.lace.io) |

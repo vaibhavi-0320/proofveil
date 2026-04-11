@@ -20,6 +20,7 @@ const Navbar = () => {
     if (walletConnected) {
       setWalletConnected(false);
       setWalletAddress("");
+      localStorage.removeItem("proofveil_wallet");
     } else {
       setModalOpen(true);
     }
@@ -29,9 +30,11 @@ const Navbar = () => {
     if (address) {
       setWalletConnected(true);
       setWalletAddress(address);
+      localStorage.setItem("proofveil_wallet", address);
     } else {
       setWalletConnected(false);
       setWalletAddress("");
+      localStorage.removeItem("proofveil_wallet");
     }
   };
 

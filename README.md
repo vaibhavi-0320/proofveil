@@ -1,60 +1,52 @@
-<p align="center">
-  <img src="./frontend/public/proofveil-badge.png" alt="Proofveil badge" width="128" height="128" />
-</p>
+# Proofveil 🛡️
+> *Truth you can prove. Privacy you can trust.*
 
-# Proofveil 🌑
+## 🌐 Live Demo
+**https://proofveil.vercel.app**
 
-> **Truth you can prove. Privacy you can trust.**
+## 📄 Smart Contract
+| Field | Value |
+|-------|-------|
+| **Contract Address** | `9308246b6d4c9747efed80cd42792491e57d5881ff23d3fc28ba1ebefce865a4` |
+| **Network** | Midnight Preview |
+| **Deployed** | 2026-04-10 |
+| **Language** | Compact (Midnight) |
+| **Explorer** | [View on NightScan](https://explorer.preprod.midnight.network/contracts/9308246b6d4c9747efed80cd42792491e57d5881ff23d3fc28ba1ebefce865a4) |
 
-Proofveil is a decentralized anonymous reporting platform built on [Midnight Network](https://midnight.network) — the first blockchain with native zero-knowledge privacy.
+## 💡 What is Proofveil?
+The first decentralized platform for **anonymous, verifiable data reporting** powered by Midnight's zero-knowledge protocol.
 
-## What it does
+Users submit sensitive records → get a **SHA-256 cryptographic hash** → hash is verifiable forever — without revealing content.
 
-Users can submit reports/messages that are **publicly stored on the Midnight blockchain** while their **identity remains completely hidden**. No wallet address, no name, no IP — just verifiable, immutable truth.
+## ✨ Features
+- 🔐 Real SHA-256 file hashing via Web Crypto API
+- 🌙 Deployed Midnight smart contract (Compact language)
+- 👁️ Zero-knowledge proof via PLONK ZK-SNARK
+- 💼 Lace wallet connection
+- 📊 Dashboard showing all secured records
+- ✅ Audit Integrity hash verification
+- 🔒 Wallet-gated pages
 
-## How it works
+## 🛠 Tech Stack
+- React + Vite + TailwindCSS
+- Midnight Network (Preview)
+- Compact smart contract
+- Vercel deployment
 
-1. User types a message in the Proofveil UI
-2. The `storeMessage()` Compact circuit generates a ZK proof locally
-3. Only the proof + message is broadcast to Midnight — never the user's identity
-4. The message is permanently stored in the `ledger message` state on-chain
-5. Anyone can read the message; no one can know who wrote it
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Smart Contract | Compact (Midnight's ZK language) |
-| Blockchain | Midnight Network (Preprod) |
-| Privacy | Zero-Knowledge Proofs (ZK-SNARKs) |
-| Frontend | React 18 + TypeScript + Vite |
-| Styling | Tailwind CSS |
-
-## Deployed Contract
-
-- **Address:** `9308246b6d4c9747efed80cd42792491e57d5881ff23d3fc28ba1ebefce865a4`
-- **Network:** Midnight Preview
-- **Deployed:** April 10, 2026
-
-## Run Locally
-
+## 🚀 Run Locally
 ```bash
-# Backend (requires Docker + Node 20)
-cd my-fresh-app
-npm install
-docker run -p 6300:6300 midnightntwrk/proof-server:7.0.0
-npx tsx src/deploy.ts
-
-# Frontend
 cd frontend
 npm install
 npm run dev
 ```
 
-## Live Demo
-
-[proofveil.vercel.app](https://proofveil.vercel.app)
-
----
-
-Built for Midnight Network Hackathon 2026
+## 📁 Project Structure
+proofveil/
+├── frontend/          # React + Vite app
+│   ├── src/
+│   │   ├── pages/     # Dashboard, Submit, Verify
+│   │   ├── components/# Navbar, Footer, Sidebar
+│   │   └── hooks/     # useWalletGate
+├── contracts/         # Midnight smart contract
+│   └── hello-world.compact
+└── deployment.json    # Contract deployment info

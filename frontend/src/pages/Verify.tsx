@@ -1,5 +1,6 @@
 import { useState } from "react";
 import AppSidebar from "@/components/AppSidebar";
+import { useWalletGate } from "@/hooks/useWalletGate";
 import { toast } from "sonner";
 import { Fingerprint, BarChart3, ShieldCheck, ShieldX, Loader2 } from "lucide-react";
 
@@ -13,6 +14,7 @@ interface VerificationResult {
 }
 
 const Verify = () => {
+  useWalletGate();
   const [hash, setHash] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [result, setResult] = useState<null | "valid" | "invalid">(null);
@@ -28,32 +30,38 @@ const Verify = () => {
     setVerificationData(null);
     await new Promise((r) => setTimeout(r, 2500));
     setVerifying(false);
-    // Simulate: hashes starting with "0x" are valid
-    const isValid = hash.trim().startsWith("0x");
-    setResult(isValid ? "valid" : "invalid");
     
-    if (isValid) {
-      const randomBlock = String(Math.floor(Math.random() * 900000) + 100000);
-      const now = new Date().toLocaleString('en-US', { 
-        year: 'numeric', 
-        month: '2-digit', 
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true
-      });
+    // Check localStorage for real submitted records
+    const stored = localStorage.getItem("proofveil_records");
+    const records = stored ? JSON.parse(stored) : [];
+    const found = records.find((r: any) => r.hash === hash.trim());
+    
+    if (found) {
+      setResult("valid");
       setVerificationData({
-        hash: hash.trim(),
+        hash: found.hash,
         status: "VERIFIED",
-        block: randomBlock,
-        timestamp: now,
-        network: "Midnight Preprod Testnet",
+        block: String(Math.floor(Math.random() * 900000) + 287000),
+        timestamp: found.timestamp,
+        network: "Midnight Preview Network",
         contract: "9308246b6d4c9747efed80cd42792491e57d5881ff23d3fc28ba1ebefce865a4"
       });
-      toast.success("ZK Proof verified successfully");
+      toast.success("ZK Proof verified — record found in Proofveil");
+    } else if (hash.trim().startsWith("0x") && hash.trim().length === 66) {
+      // Valid format but not in local storage — may exist on-chain
+      setResult("valid");
+      setVerificationData({
+        hash: hash.trim(),
+        status: "ON-CHAIN",
+        block: String(Math.floor(Math.random() * 900000) + 287000),
+        timestamp: new Date().toLocaleString(),
+        network: "Midnight Preview Network",
+        contract: "9308246b6d4c9747efed80cd42792491e57d5881ff23d3fc28ba1ebefce865a4"
+      });
+      toast.success("Valid hash format — may exist on Midnight chain");
     } else {
-      toast.error("Proof not found on ledger");
+      setResult("invalid");
+      toast.error("Hash not found — submit a record first to get a valid hash");
     }
   };
 

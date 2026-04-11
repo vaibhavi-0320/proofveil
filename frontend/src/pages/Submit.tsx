@@ -1,8 +1,10 @@
 import { useState, useRef } from "react";
 import AppSidebar from "@/components/AppSidebar";
+import { useWalletGate } from "@/hooks/useWalletGate";
 import { toast } from "sonner";
 
 const Submit = () => {
+  useWalletGate();
   const [recordType, setRecordType] = useState("Medical Certification");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");

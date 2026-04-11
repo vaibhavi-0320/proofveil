@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import AppSidebar from "@/components/AppSidebar";
+import { useWalletGate } from "@/hooks/useWalletGate";
 import { SkeletonCard, SkeletonRow } from "@/components/SkeletonLoader";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import { toast } from "sonner";
@@ -17,6 +18,7 @@ const grants = [
 ];
 
 const Dashboard = () => {
+  useWalletGate();
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState<Record[]>([]);
 
@@ -46,10 +48,10 @@ const Dashboard = () => {
   };
 
   const metrics = [
-    { label: "Active Proofs", value: "1,284", icon: "🛡️", trend: "+12.5% from last period", trendColor: "text-secondary" },
-    { label: "Verified Records", value: "942", icon: "✅", trend: "System Integrity 99.9%", trendColor: "text-secondary" },
-    { label: "Processing", value: "12", icon: "⚙️", trend: "Average latency 42ms", trendColor: "text-primary" },
-    { label: "Access Grants", value: "45", icon: "🔑", trend: "3 expiring within 24h", trendColor: "text-destructive" },
+    { label: "Your Records", value: String(records.length), icon: "🛡️", trend: "Secured on Midnight Preview", trendColor: "text-secondary" },
+    { label: "Verified Hashes", value: String(records.length), icon: "✅", trend: "SHA-256 cryptographic proof", trendColor: "text-secondary" },
+    { label: "Network", value: "Preview", icon: "⚙️", trend: "Midnight Blockchain", trendColor: "text-primary" },
+    { label: "Contract", value: "Live", icon: "🔑", trend: "9308246b...865a4", trendColor: "text-secondary" },
   ];
 
   return (

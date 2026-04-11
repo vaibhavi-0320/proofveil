@@ -1,88 +1,56 @@
-# my-fresh-app
+# Proofveil 🌑
 
-A Midnight Network application created with `create-mn-app`.
+> **Truth you can prove. Privacy you can trust.**
 
-## Getting Started
+Proofveil is a decentralized anonymous reporting platform built on [Midnight Network](https://midnight.network) — the first blockchain with native zero-knowledge privacy.
 
-### Prerequisites
+## What it does
 
-- Node.js 22+ installed
-- Docker installed (for proof server)
+Users can submit reports/messages that are **publicly stored on the Midnight blockchain** while their **identity remains completely hidden**. No wallet address, no name, no IP — just verifiable, immutable truth.
 
-### Quick Start
+## How it works
 
-1. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+1. User types a message in the Proofveil UI
+2. The `storeMessage()` Compact circuit generates a ZK proof locally
+3. Only the proof + message is broadcast to Midnight — never the user's identity
+4. The message is permanently stored in the `ledger message` state on-chain
+5. Anyone can read the message; no one can know who wrote it
 
-2. **Setup and deploy**:
+## Tech Stack
 
-   ```bash
-   npm run setup
-   ```
+| Layer | Technology |
+|---|---|
+| Smart Contract | Compact (Midnight's ZK language) |
+| Blockchain | Midnight Network (Preprod) |
+| Privacy | Zero-Knowledge Proofs (ZK-SNARKs) |
+| Frontend | React 18 + TypeScript + Vite |
+| Styling | Tailwind CSS |
 
-   This will:
+## Deployed Contract
 
-   - Compile your Compact contract
-   - Deploy contract to Preprod
+- **Address:** `9308246b6d4c9747efed80cd42792491e57d5881ff23d3fc28ba1ebefce865a4`
+- **Network:** Midnight Preview
+- **Deployed:** April 10, 2026
 
-3. **Interact with your contract**:
-   ```bash
-   npm run cli
-   ```
+## Run Locally
 
-### Available Scripts
+```bash
+# Backend (requires Docker + Node 20)
+cd my-fresh-app
+npm install
+docker run -p 6300:6300 midnightntwrk/proof-server:7.0.0
+npx tsx src/deploy.ts
 
-- `npm run setup` - Start proof server, compile contract, and deploy
-- `npm run compile` - Compile Compact contract
-- `npm run deploy` - Deploy contract to Preprod
-- `npm run cli` - Interactive CLI for contract
-- `npm run check-balance` - Check wallet balance
-- `npm run proof-server:start` - Start proof server (Docker)
-- `npm run proof-server:stop` - Stop proof server
-- `npm run clean` - Clean build artifacts
-
-### Project Structure
-
-```
-my-fresh-app/
-├── contracts/
-│   ├── hello-world.compact    # Smart contract source
-│   └── managed/               # Compiled artifacts (after compile)
-├── src/
-│   ├── deploy.ts             # Deployment script
-│   ├── cli.ts                # Interactive CLI
-│   └── check-balance.ts      # Balance checker
-├── docker-compose.yml        # Proof server config
-├── deployment.json           # Deployment info (after deploy)
-└── package.json
+# Frontend
+cd frontend
+npm install
+npm run dev
 ```
 
-### Getting Preprod Tokens
+## Live Demo
 
-1. Run `npm run deploy` to see your wallet address
-2. Visit [https://faucet.preprod.midnight.network/](https://faucet.preprod.midnight.network/)
-3. Enter your address to receive test tokens (tNight)
+[proofveil.vercel.app](https://proofveil.vercel.app)
 
-### Learn More
+---
 
-- [Midnight Documentation](https://docs.midnight.network)
-- [Compact Language Guide](https://docs.midnight.network/compact)
-- [Tutorial Series](https://docs.midnight.network/tutorials)
-
-## Contract Overview
-
-This project includes a simple "Hello World" contract that:
-
-- Stores a message on the blockchain
-- Allows reading the current message
-- Demonstrates basic Midnight functionality
-
-The contract uses:
-
-- **Public ledger state** for the message
-- **Zero-knowledge proofs** for transactions
-- **Privacy-preserving** architecture
-
-Happy coding! 🌙
+Built for Midnight Network Hackathon 2026

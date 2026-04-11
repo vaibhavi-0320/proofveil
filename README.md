@@ -8,15 +8,13 @@
 | Field | Value |
 |-------|-------|
 | **Contract Address** | `9308246b6d4c9747efed80cd42792491e57d5881ff23d3fc28ba1ebefce865a4` |
-| **Network** | Midnight Preview |
+| **Network** | Midnight Preview Testnet |
 | **Deployed** | 2026-04-10 |
 | **Language** | Compact (Midnight) |
-| **Explorer** | [View on NightScan](https://explorer.preprod.midnight.network/contracts/9308246b6d4c9747efed80cd42792491e57d5881ff23d3fc28ba1ebefce865a4) |
+| **Contract Source** | [View on GitHub](https://github.com/vaibhavi-0320/proofveil/blob/main/contracts/hello-world.compact) |
 
 ## 💡 What is Proofveil?
 The first decentralized platform for **anonymous, verifiable data reporting** powered by Midnight's zero-knowledge protocol.
-
-Users submit sensitive records → get a **SHA-256 cryptographic hash** → hash is verifiable forever — without revealing content.
 
 ## ✨ Features
 - 🔐 Real SHA-256 file hashing via Web Crypto API
@@ -28,25 +26,9 @@ Users submit sensitive records → get a **SHA-256 cryptographic hash** → hash
 - 🔒 Wallet-gated pages
 
 ## 🛠 Tech Stack
-- React + Vite + TailwindCSS
-- Midnight Network (Preview)
-- Compact smart contract
-- Vercel deployment
+- React + Vite + TailwindCSS + Midnight Network
 
 ## 🚀 Run Locally
 ```bash
-cd frontend
-npm install
-npm run dev
+cd frontend && npm install && npm run dev
 ```
-
-## 📁 Project Structure
-proofveil/
-├── frontend/          # React + Vite app
-│   ├── src/
-│   │   ├── pages/     # Dashboard, Submit, Verify
-│   │   ├── components/# Navbar, Footer, Sidebar
-│   │   └── hooks/     # useWalletGate
-├── contracts/         # Midnight smart contract
-│   └── hello-world.compact
-└── deployment.json    # Contract deployment info

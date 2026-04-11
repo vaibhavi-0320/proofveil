@@ -37,7 +37,7 @@ const resources = [
     icon: <BookOpen className="w-5 h-5" />,
     title: "Documentation",
     description: "Full API reference and guides",
-    href: "https://midnight.network/docs",
+    href: "https://docs.midnight.network",
   },
   {
     icon: <MessageSquare className="w-5 h-5" />,

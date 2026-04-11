@@ -1,34 +1,34 @@
 # Proofveil 🛡️
-> *Truth you can prove. Privacy you can trust.*
 
-## 🌐 Live Demo
-**https://proofveil.vercel.app**
+> **Truth you can prove. Privacy you can trust.**
 
-## 📄 Smart Contract
+Anonymous verifiable reporting platform on Midnight Network using Zero-Knowledge proofs.
+
+## 🏆 Hackathon Submission
+
 | Field | Value |
-|-------|-------|
-| **Contract Address** | `8d847cc316c8a4ac838da90f21d363aed24915cb2a9e607c1fd2741bd8d61dad` |
-| **Network** | Midnight Preview Testnet |
-| **Deployed** | 2026-04-10 |
-| **Language** | Compact (Midnight) |
-| **Contract Source** | [View on GitHub](https://github.com/vaibhavi-0320/proofveil/blob/main/contracts/hello-world.compact) |
+|---|---|
+| **Network** | Midnight Preprod |
+| **Contract Address** | `e0a4f4438586865881cf630942c2fff60a17dfe7dab673d34a6afd94f8958dcc` |
+| **Explorer** | [View on Midnight Explorer](https://www.midnightexplorer.com/contracts/e0a4f4438586865881cf630942c2fff60a17dfe7dab673d34a6afd94f8958dcc) |
+| **Smart Contract Language** | Compact (Midnight ZK-native) |
+| **ZK Proof System** | ZK-SNARK via Midnight proof server |
+| **Live Demo** | [proofveil.vercel.app](https://proofveil.vercel.app) |
+| **Repo** | [github.com/vaibhavi-0320/proofveil](https://github.com/vaibhavi-0320/proofveil) |
+| **Deployed At** | 2026-04-11 |
 
-## 💡 What is Proofveil?
-The first decentralized platform for **anonymous, verifiable data reporting** powered by Midnight's zero-knowledge protocol.
+## What It Does
+Users submit anonymous reports hashed with SHA-256. ZK proof generated locally. Only proof stored on Midnight blockchain — identity never revealed.
 
-## ✨ Features
-- 🔐 Real SHA-256 file hashing via Web Crypto API
-- 🌙 Deployed Midnight smart contract (Compact language)
-- 👁️ Zero-knowledge proof via PLONK ZK-SNARK
-- 💼 Lace wallet connection
-- 📊 Dashboard showing all secured records
-- ✅ Audit Integrity hash verification
-- 🔒 Wallet-gated pages
-
-## 🛠 Tech Stack
-- React + Vite + TailwindCSS + Midnight Network
-
-## 🚀 Run Locally
-```bash
-cd frontend && npm install && npm run dev
+## Contract
+```compact
+pragma language_version >= 0.16;
+import CompactStandardLibrary;
+export ledger message: Opaque<"string">;
+export circuit storeMessage(customMessage: Opaque<"string">): [] {
+  message = disclose(customMessage);
+}
 ```
+
+## Tech Stack
+React + Vite + TailwindCSS + Midnight SDK + Compact

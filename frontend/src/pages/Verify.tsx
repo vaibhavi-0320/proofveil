@@ -44,7 +44,7 @@ const Verify = () => {
         block: String(Math.floor(Math.random() * 900000) + 287000),
         timestamp: found.timestamp,
         network: "Midnight Preview Network",
-        contract: "8d847cc316c8a4ac838da90f21d363aed24915cb2a9e607c1fd2741bd8d61dad"
+        contract: "e0a4f4438586865881cf630942c2fff60a17dfe7dab673d34a6afd94f8958dcc"
       });
       toast.success("ZK Proof verified — record found in Proofveil");
     } else if (hash.trim().startsWith("0x") && hash.trim().length === 66) {
@@ -56,7 +56,7 @@ const Verify = () => {
         block: String(Math.floor(Math.random() * 900000) + 287000),
         timestamp: new Date().toLocaleString(),
         network: "Midnight Preview Network",
-        contract: "8d847cc316c8a4ac838da90f21d363aed24915cb2a9e607c1fd2741bd8d61dad"
+        contract: "e0a4f4438586865881cf630942c2fff60a17dfe7dab673d34a6afd94f8958dcc"
       });
       toast.success("Valid hash format — may exist on Midnight chain");
     } else {

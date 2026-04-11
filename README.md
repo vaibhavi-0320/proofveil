@@ -7,7 +7,7 @@
 ## 📄 Smart Contract
 | Field | Value |
 |-------|-------|
-| **Contract Address** | `9308246b6d4c9747efed80cd42792491e57d5881ff23d3fc28ba1ebefce865a4` |
+| **Contract Address** | `8d847cc316c8a4ac838da90f21d363aed24915cb2a9e607c1fd2741bd8d61dad` |
 | **Network** | Midnight Preview Testnet |
 | **Deployed** | 2026-04-10 |
 | **Language** | Compact (Midnight) |

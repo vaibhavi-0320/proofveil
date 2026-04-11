@@ -62,6 +62,10 @@ const Landing = () => {
             <div className="flex flex-wrap gap-4">
               <Link
                 to="/dashboard"
+                onClick={(e) => {
+                  e.preventDefault();
+                  alert("Lace wallet connection coming soon! Install Lace wallet from lace.io");
+                }}
                 className="px-8 py-4 gradient-primary text-primary-foreground rounded-lg font-medium text-lg gradient-primary-glow hover:shadow-[0_0_45px_hsl(var(--primary-container)/0.5)] active:scale-95 transition-all"
               >
                 Connect Wallet
@@ -157,7 +161,7 @@ const Landing = () => {
                 <img
                   src={obsidianCube}
                   alt="Obsidian data block"
-                  className="rounded-xl w-full animate-cube-rotate drop-shadow-[0_20px_60px_hsl(var(--primary)/0.2)]"
+                  className="rounded-xl w-full animate-float drop-shadow-[0_20px_60px_hsl(var(--primary)/0.2)]"
                   loading="lazy"
                   width={640}
                   height={640}

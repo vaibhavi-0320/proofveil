@@ -26,6 +26,7 @@ const Footer = () => (
           <ul className="space-y-4 text-on-surface-variant font-body">
             <li><a href="https://docs.midnight.network" target="_blank" rel="noreferrer" className="hover:text-primary transition-colors">Documentation</a></li>
             <li><a href="https://github.com/vaibhavi-0320/proofveil" target="_blank" rel="noreferrer" className="hover:text-primary transition-colors">GitHub</a></li>
+              <li><a href="https://explorer.preprod.midnight.network/contracts/9308246b6d4c9747efed80cd42792491e57d5881ff23d3fc28ba1ebefce865a4" target="_blank" rel="noreferrer" className="hover:text-primary transition-colors">Smart Contract ↗</a></li>
           </ul>
         </div>
       </div>

@@ -1,10 +1,24 @@
 {
   "compilerOptions": {
-    "target": "ES2020","lib": ["ES2020","DOM","DOM.Iterable"],
-    "module": "ESNext","skipLibCheck": true,
-    "moduleResolution": "bundler","allowImportingTsExtensions": true,
-    "isolatedModules": true,"noEmit": true,"jsx": "react-jsx","strict": false,
-    "paths": { "@/*": ["./src/*"] }
+    "allowJs": true,
+    "noImplicitAny": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "skipLibCheck": true,
+    "strictNullChecks": false
   },
-  "include": ["src"]
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
 }

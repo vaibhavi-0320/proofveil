@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import BrandFooter from "@/components/BrandFooter";
 
 const Footer = () => (
   <footer className="bg-surface border-t border-outline-variant/10 pt-20 pb-12">
@@ -40,6 +41,8 @@ const Footer = () => (
           <span className="text-xs font-label text-secondary uppercase tracking-widest">Preprod Testnet</span>
         </div>
       </div>
+      
+      <BrandFooter />
     </div>
   </footer>
 );

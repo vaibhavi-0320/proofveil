@@ -2,7 +2,7 @@
  
 <br/>
  
-<img src="Screenshots/Banner-ProofVeil.png" alt="ProofVeil — Truth you can prove. Privacy you can trust." width="100%"/>
+<img src="images/banner.png" alt="ProofVeil — Truth you can prove. Privacy you can trust." width="100%"/>
  
 <br/><br/>
  

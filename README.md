@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./frontend/public/proofveil-badge.png" alt="Proofveil badge" width="128" height="128" />
+</p>
+
 # Proofveil 🌑
 
 > **Truth you can prove. Privacy you can trust.**

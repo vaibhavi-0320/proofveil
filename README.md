@@ -22,10 +22,10 @@
  
 <br/>
  
-[🎬 **Watch Demo**](#demo-video) &nbsp;&nbsp;|&nbsp;&nbsp;
+[🎬 **Watch Demo**](https://www.loom.com/share/0f142365d8a449e88ebf015f17c7834e)
 [🔴 **Live App**](https://proofveil.vercel.app) &nbsp;&nbsp;|&nbsp;&nbsp;
 [📜 **Contract on Explorer**](https://explorer.midnight-ntwrk.preview.midnight.network/contracts/8d847cc316c8a4ac838da90f21d363aed24915cb2a9e607c1fd2741bd8d61dad) &nbsp;&nbsp;|&nbsp;&nbsp;
-[📑 **Slide Deck**](#slide-deck) &nbsp;&nbsp;|&nbsp;&nbsp;
+[📑 **Slide Deck**](https://docs.google.com/presentation/d/1VYTKVpM2CvhLRq6fH_V5ze996grY00ZoNPpNyMKzoac/edit?usp=sharing)
 [🐙 **GitHub**](https://github.com/vaibhavi-0320/proofveil)
  
 <br/>

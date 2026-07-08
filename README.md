@@ -6,26 +6,27 @@
  
 <br/><br/>
  
-*ProofVeil is a zero-knowledge proof platform built on the Midnight blockchain.*
-*Submit documents. Generate SHA-256 proofs. Verify authenticity — without revealing what's inside.*
+*ProofVeil is a Confidential Credentials platform built on the Midnight blockchain.*
+*Submit a document. Get a zero-knowledge proof it's valid. Verify it later — without ever revealing what it is.*
  
 <br/>
- 
-[![Midnight](https://img.shields.io/badge/Midnight-Preview_Testnet-7c3aed?style=flat-square&logoColor=white)](https://midnight.network)
+
+[![CI](https://github.com/vaibhavi-0320/proofveil/actions/workflows/ci.yml/badge.svg)](https://github.com/vaibhavi-0320/proofveil/actions/workflows/ci.yml)
+[![Midnight](https://img.shields.io/badge/Midnight-Preprod_Testnet-7c3aed?style=flat-square&logoColor=white)](https://midnight.network)
 [![Compact](https://img.shields.io/badge/Compact-Smart_Contract-5b21b6?style=flat-square)](https://docs.midnight.network/compact)
-[![React](https://img.shields.io/badge/React-19-a78bfa?style=flat-square&logo=react&logoColor=white)](https://react.dev)
+[![React](https://img.shields.io/badge/React-18-a78bfa?style=flat-square&logo=react&logoColor=white)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-7c3aed?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org)
-[![Vite](https://img.shields.io/badge/Vite-6-5b21b6?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev)
+[![Vite](https://img.shields.io/badge/Vite-5-5b21b6?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev)
 [![Vercel](https://img.shields.io/badge/Deployed-Vercel-a78bfa?style=flat-square&logo=vercel&logoColor=white)](https://proofveil.vercel.app)
 [![License](https://img.shields.io/badge/License-MIT-7c3aed?style=flat-square)](LICENSE)
-[![Track](https://img.shields.io/badge/Track-Identity_%26_Governance-5b21b6?style=flat-square)](https://midnight.network)
+[![Level](https://img.shields.io/badge/Midnight_Hackathon-Level_3-5b21b6?style=flat-square)](PROPOSAL.md)
  
 <br/>
  
 [🎬 **Watch Demo**](https://www.loom.com/share/0f142365d8a449e88ebf015f17c7834e)
 [🔴 **Live App**](https://proofveil.vercel.app) &nbsp;&nbsp;|&nbsp;&nbsp;
-[📜 **Contract on Explorer**](https://explorer.midnight-ntwrk.preview.midnight.network/contracts/8d847cc316c8a4ac838da90f21d363aed24915cb2a9e607c1fd2741bd8d61dad) &nbsp;&nbsp;|&nbsp;&nbsp;
-[📑 **Slide Deck**](https://docs.google.com/presentation/d/1VYTKVpM2CvhLRq6fH_V5ze996grY00ZoNPpNyMKzoac/edit?usp=sharing)
+[📜 **Contract Source**](contracts/hello-world.compact) &nbsp;&nbsp;|&nbsp;&nbsp;
+[📄 **Proposal**](PROPOSAL.md)
 [🐙 **GitHub**](https://github.com/vaibhavi-0320/proofveil)
  
 <br/>
@@ -33,40 +34,44 @@
 </div>
  
 ---
- 
-<div align="center">
- 
-## What makes ProofVeil different?
- 
-</div>
- 
-> Most document verification platforms store your files on a server. You hand over your data and trust a company not to misuse it. That trust has a cost — privacy, security, and control.
->
-> ProofVeil replaces that trust with **zero-knowledge cryptography deployed on Midnight**. Your document never leaves your device. Only a SHA-256 hash is anchored on-chain. Anyone can verify the proof. Nobody can see what was proved.
- 
+
+## Midnight Hackathon — Level 3
+
+ProofVeil is built around the **Confidential Credentials** idea from Midnight's Level 3 approved list: prove a
+credential is valid without ever revealing it. See [`PROPOSAL.md`](PROPOSAL.md) for the full product/why-Midnight/data-model/mainnet-feasibility writeup.
+
+> Most document verification platforms store your files on a server. You hand over your data and trust a company
+> not to misuse it. ProofVeil replaces that trust with zero-knowledge cryptography: a document's hash and a private
+> salt are passed as **witnesses** to a Compact circuit, which discloses only a one-way commitment — never the
+> document itself — to the Midnight ledger. Verifying later re-proves knowledge of that same (document, salt) pair
+> without disclosing it to the chain, to an observer, or to whoever is checking.
+
 ```
-You upload a file  →  SHA-256 hash generated locally  →  Hash stored on Midnight  →  Anyone verifies
-                                                       →  Your document stays private — always
+You upload a file  →  SHA-256 hash + random salt generated locally (never disclosed)
+                   →  submitCredential circuit discloses only a commitment to Midnight
+                   →  verifyCredential later proves you hold a valid credential, without revealing it
 ```
  
 ---
  
-## 🏆 Hackathon Track — Identity & Governance
+## Privacy Model
  
-ProofVeil is submitted under the **Identity & Governance** track of the Midnight Hackathon.
- 
-### Why this track?
- 
-Identity and governance systems have one fundamental problem: proving something is true without revealing everything. A journalist needs to prove a document is authentic without revealing the source. A whistleblower needs to prove evidence exists without exposing themselves. An organisation needs to verify credentials without storing sensitive records.
- 
-ProofVeil solves this with Midnight's zero-knowledge protocol:
- 
-| Use Case | Traditional Approach | ProofVeil Approach |
-| :------- | :------------------- | :----------------- |
-| Document authentication | Upload to a server, trust the company | Hash locally, anchor on-chain, verify anywhere |
-| Identity credential proof | Share the full document | Prove the hash matches — never share the file |
-| Whistleblower protection | Risky — files stored on servers | ZK proof — nothing sensitive ever leaves the device |
-| Governance audit trail | Centralised, mutable logs | Immutable, verifiable, privacy-preserving records |
+| Field | Visibility |
+| :---- | :--------- |
+| `document` (SHA-256 of your file/metadata) | 🔒 **PRIVATE** — a circuit witness, never disclosed or stored anywhere on-chain |
+| `salt` (32 random bytes) | 🔒 **PRIVATE** — a circuit witness, blinds the commitment |
+| `commitment = persistentHash([document, salt])` | 🌐 **PUBLIC** — the only on-chain trace of a credential; a one-way hash, not reversible |
+| `verifiedCount` | 🌐 **PUBLIC** — a running total of successful verifications |
+| "Credential is valid" | ✅ **PROVED WITHOUT REVEALING** — a successful `verifyCredential` transaction is a ZK proof that the caller knows a `(document, salt)` pair matching an issued commitment, without the document ever leaving the caller's device |
+
+### Privacy Claim
+
+**What an observer of the Midnight ledger can learn:** that some credential commitments have been issued, and that
+some number of successful verifications have occurred. Nothing about the documents, their contents, filenames, or
+who submitted/verified them.
+
+**What an observer cannot learn:** the document itself, its filename or metadata, the salt, or (beyond what issuance
+already made public) which specific commitment a given verification matched.
  
 ---
  
@@ -74,7 +79,10 @@ ProofVeil solves this with Midnight's zero-knowledge protocol:
  
 **[https://proofveil.vercel.app](https://proofveil.vercel.app)**
  
-Connect your Midnight Lace wallet → Submit a document → Get a SHA-256 proof hash → Verify it on-chain — all without revealing the document contents.
+Connect your Midnight Lace wallet → Submit a credential → Verify it later — all without revealing the underlying document.
+
+> **Note:** the live app and the contract address below are being updated for the Level 3 rewrite. See
+> [Contract Address](#contract-address) for the current deployment status.
  
 ---
  
@@ -85,32 +93,9 @@ Connect your Midnight Lace wallet → Submit a document → Get a SHA-256 proof 
 **[▶ Watch the full demo walkthrough](https://www.loom.com/share/0f142365d8a449e88ebf015f17c7834e)**
  
 </div>
- 
-The demo covers every part of the working application:
- 
-- ✅ Landing page with Connect Wallet flow
-- ✅ Submitting a document and generating a real SHA-256 hash
-- ✅ Transaction anchored on Midnight Preview network
-- ✅ Verify page confirming proof authenticity
-- ✅ Dashboard showing full proof history
-- ✅ Smart contract visible on Midnight Explorer
- 
----
- 
-## 📑 Slide Deck
- 
-<div align="center">
- 
-**[▶ View Presentation Slides](https://docs.google.com/presentation/d/1VYTKVpM2CvhLRq6fH_V5ze996grY00ZoNPpNyMKzoac/edit?usp=sharing)**
- 
-</div>
- 
-The deck covers:
-- Problem statement and market opportunity
-- How zero-knowledge proofs solve identity and governance challenges
-- ProofVeil architecture and Midnight integration
-- Live demo walkthrough
-- Roadmap and future development
+
+> This links to the Level 2 demo. A new recording covering the Confidential Credentials flow (submit → verify,
+> including a rejected/forged proof) is a follow-up once the contract is deployed to Preprod.
  
 ---
  
@@ -118,48 +103,61 @@ The deck covers:
  
 ### Contract Address
  
-```
-8d847cc316c8a4ac838da90f21d363aed24915cb2a9e607c1fd2741bd8d61dad
-```
- 
-[View on Midnight Preview Explorer →](https://explorer.midnight-ntwrk.preview.midnight.network/contracts/8d847cc316c8a4ac838da90f21d363aed24915cb2a9e607c1fd2741bd8d61dad)
+| Property | Value |
+| :-------- | :---- |
+| Network | Midnight **Preprod** Testnet |
+| Contract address | `<populate after running npm run deploy>` |
+| Deployed at | `deployment.json` (git-ignored — see Run Locally) |
+
+This repo's contract was rewritten for Level 3 and has not yet been redeployed from this environment (the Compact
+compiler and a funded Preprod wallet are required — see [Run Locally](#-run-locally)). Once deployed, update this
+table, `frontend/.env`'s `VITE_CONTRACT_ADDRESS`, and the Midnight Explorer link.
  
 ### Network Details
  
 | Property | Value |
 | :-------- | :---- |
-| Network | Midnight Preview Testnet |
+| Network | Midnight Preprod Testnet |
 | Language | Compact (Midnight's ZK smart contract language) |
 | Contract file | `contracts/hello-world.compact` |
-| Deployed at | `deployment.json` |
 | Proof server | Local (port 6300 via Docker) |
-| Indexer | `https://indexer.preview.midnight.network/api/v3/graphql` |
-| Node RPC | `https://rpc.preview.midnight.network` |
+| Indexer | `https://indexer.preprod.midnight.network/api/v3/graphql` |
+| Node RPC | `https://rpc.preprod.midnight.network` |
  
 ### Contract Code
  
 ```compact
-pragma language_version >= 0.16 && <= 0.30;
- 
-export ledger message: Opaque<"string">;
- 
-export circuit storeMessage(newMessage: Opaque<"string">): [] {
-  message = disclose(newMessage);
+pragma language_version >= 0.16;
+import CompactStandardLibrary;
+
+export ledger credentialCommitments: Map<Bytes<32>, Boolean>;
+export ledger verifiedCount: Counter;
+
+export circuit submitCredential(document: Bytes<32>, salt: Bytes<32>): [] {
+    const commitment = persistentHash<Vector<2, Bytes<32>>>([document, salt]);
+    credentialCommitments.insert(disclose(commitment), true);
+}
+
+export circuit verifyCredential(document: Bytes<32>, salt: Bytes<32>): [] {
+    const commitment = persistentHash<Vector<2, Bytes<32>>>([document, salt]);
+    assert credentialCommitments.member(disclose(commitment)) "Credential not found";
+    verifiedCount.increment(1);
 }
 ```
  
-The `storeMessage` circuit anchors a proof hash on the Midnight ledger using zero-knowledge disclosure. The hash is public. The document that produced it is not.
+`document` and `salt` are private witnesses — they never touch the ledger. Only the commitment they produce, and a
+running verification count, are ever disclosed.
  
 ### How It Works
  
 ```
-1. User uploads file locally in the browser
-2. SHA-256 hash computed client-side (file never leaves device)
-3. Hash passed to storeMessage() circuit
-4. ZK proof generated by local proof server
-5. Proof + hash submitted to Midnight Preview network
-6. Transaction confirmed — hash is now immutably on-chain
-7. Anyone with the hash can verify it on the Verify page
+1. User uploads a file / enters credential details, locally in the browser
+2. SHA-256 hash computed client-side (the file never leaves the device)
+3. A random salt is generated client-side
+4. (document, salt) passed as private witnesses to submitCredential()
+5. ZK proof generated (Lace wallet + proof server); only the commitment is disclosed to Midnight
+6. Later, the same (document, salt) pair is passed to verifyCredential()
+7. The circuit proves the pair matches an issued commitment — without revealing the document
 ```
  
 ---
@@ -168,14 +166,14 @@ The `storeMessage` circuit anchors a proof hash on the Midnight ledger using zer
  
 | Feature | Description |
 | :------ | :---------- |
-| 🔒 Zero-knowledge proofs | Document hash anchored on Midnight — contents stay private |
-| 🛡️ Local hashing | SHA-256 computed in the browser — file never uploaded to any server |
-| 👛 Wallet connection | Midnight Lace wallet integration with address display |
-| ✅ Submit proofs | Upload any file, generate a proof, store it on-chain |
-| 🔍 Verify proofs | Check any hash against on-chain records instantly |
-| 📊 Dashboard | Full history of all submitted proofs with timestamps |
+| 🔒 Confidential Credentials | Document hash + salt are private witnesses — never disclosed, only their commitment is |
+| 🛡️ Local hashing | SHA-256 computed in the browser via Web Crypto — the file never leaves the device |
+| 👛 Midnight wallet connection | Real `@midnight-ntwrk/dapp-connector-api` integration (Lace's Midnight connector, not Cardano's) |
+| ✅ Submit credentials | Issue a commitment on-chain via the real `submitCredential` circuit |
+| 🔍 Verify credentials | Prove a credential is valid via the real `verifyCredential` circuit — no simulated results |
+| 📊 Dashboard | Local submission history plus the live, on-chain `verifiedCount` |
 | 🌐 Live on Vercel | Deployed and accessible at proofveil.vercel.app |
-| 🔗 Explorer link | Every contract interaction visible on Midnight Explorer |
+| ✅ CI | GitHub Actions compiles the contract, runs contract + frontend tests on every push/PR |
  
 ---
  
@@ -184,42 +182,31 @@ The `storeMessage` circuit anchors a proof hash on the Midnight ledger using zer
 ```
 ┌──────────────────────────────────────────────────┐
 │                  User's Browser                  │
-│                                                  │
-│   React 19  ·  TypeScript  ·  TailwindCSS        │
-│   Vite 6  ·  React Router                        │
+│   React 18 · TypeScript · TailwindCSS · Vite     │
 └──────────────────────┬───────────────────────────┘
                        │
                        ▼
 ┌──────────────────────────────────────────────────┐
-│           Midnight Lace Wallet                   │
-│                                                  │
-│   Connects wallet  ·  Signs transactions         │
-│   Private key never leaves the device            │
+│      Midnight Lace Wallet (dApp Connector)        │
+│   window.midnight.mnLace · enable() · state()     │
+│   Balances + proves transactions; signs with keys │
+│   that never leave the wallet                     │
 └──────────────────────┬───────────────────────────┘
                        │
                        ▼
 ┌──────────────────────────────────────────────────┐
-│           Local Proof Server (Docker)            │
-│                                                  │
-│   midnightntwrk/proof-server:8.0.3               │
-│   Generates ZK proofs  ·  Port 6300              │
+│           Proof Server (Docker, local or          │
+│           wallet-configured)                      │
+│   midnightntwrk/proof-server · generates ZK proofs│
 └──────────────────────┬───────────────────────────┘
                        │
                        ▼
 ┌──────────────────────────────────────────────────┐
-│         Midnight Preview Network                 │
-│                                                  │
-│   Compact Smart Contract                         │
-│   storeMessage() circuit — ZK disclosure         │
-│   Hash anchored immutably on-chain               │
-└──────────────────────┬───────────────────────────┘
-                       │
-                       ▼
-┌──────────────────────────────────────────────────┐
-│         Midnight Preview Explorer                │
-│   explorer.midnight-ntwrk.preview...             │
-│   Contract transactions publicly verifiable      │
-└──────────────────────────────────────────────────┘
+│           Midnight Preprod Network                │
+│   Compact contract: credentialCommitments (Map),  │
+│   verifiedCount (Counter)                         │
+│   submitCredential() / verifyCredential() circuits│
+└────────────────────────────────────────────────────┘
 ```
  
 ---
@@ -230,31 +217,31 @@ The `storeMessage` circuit anchors a proof hash on the Midnight ledger using zer
 proofveil/
 │
 ├── contracts/
-│   └── hello-world.compact         Compact ZK smart contract
+│   ├── hello-world.compact         Confidential Credentials Compact contract
+│   └── test/                       Vitest contract simulator + tests
 │
 ├── src/
-│   ├── deploy.ts                   Contract deployment script
-│   ├── cli.ts                      CLI interaction with deployed contract
+│   ├── deploy.ts                   Contract deployment script (Preprod)
+│   ├── cli.ts                      CLI: submit/verify credentials, check verified count
 │   └── check-balance.ts            Wallet balance checker
 │
 ├── frontend/
 │   └── src/
+│       ├── midnight/                Browser wallet + provider + contract wiring
+│       ├── types/credential.ts      Shared ProofRecord type + localStorage helpers
 │       ├── pages/
 │       │   ├── Landing.tsx         Home page with Connect Wallet
-│       │   ├── Submit.tsx          File upload + SHA-256 hashing + proof submission
-│       │   ├── Verify.tsx          Proof verification against on-chain records
-│       │   └── Dashboard.tsx       Full proof history and records
-│       │
-│       ├── components/
-│       │   ├── Navbar.tsx          Navigation + wallet connection modal
-│       │   └── Footer.tsx          Links to contract, docs, GitHub
-│       │
-│       └── hooks/
-│           └── useWalletGate.ts    Wallet authentication guard
+│       │   ├── Submit.tsx          File hashing + real submitCredential circuit call
+│       │   ├── Verify.tsx          Real verifyCredential circuit call
+│       │   └── Dashboard.tsx       Local submission history + live verifiedCount
+│       └── components/
+│           ├── ConnectWalletModal.tsx  Real Midnight dApp connector wallet UI
+│           └── Footer.tsx
 │
-├── deployment.json                 Deployed contract address + network info
+├── .github/workflows/ci.yml        Compile contract, run contract + frontend tests
+├── PROPOSAL.md                     Level 3 idea proposal
+├── LICENSE
 ├── package.json
-├── tsconfig.json
 └── README.md
 ```
  
@@ -286,24 +273,41 @@ docker run -p 6300:6300 midnightntwrk/proof-server:8.0.3 midnight-proof-server -
  
 # Compile the contract
 npm run compile
+
+# Run contract tests (Vitest simulator - no proof server needed)
+npm test
  
-# Deploy to Midnight Preview network
+# Deploy to Midnight Preprod network
 npm run deploy
+# copy the printed contract address into frontend/.env as VITE_CONTRACT_ADDRESS
+# (see frontend/.env.example)
  
 # Run the frontend
 cd frontend
 npm install
+cp .env.example .env   # then fill in VITE_CONTRACT_ADDRESS
 npm run dev
-# → http://localhost:5173
+# → http://localhost:8080
 ```
  
 ### Get Test Tokens
  
 1. Open your **Lace wallet** → Midnight tab → copy your unshielded address
-2. Visit **[https://faucet.preview.midnight.network](https://faucet.preview.midnight.network)**
-3. Paste your address → Request 1000 tNIGHT
+2. Visit **[https://faucet.preprod.midnight.network](https://faucet.preprod.midnight.network)**
+3. Paste your address → Request test tokens
 4. In Lace → click **Generate tDUST** → Confirm
 5. Wait ~2 minutes — tDUST appears in your wallet
+
+---
+
+## ✅ CI/CD
+
+Every push and PR runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
+
+- **Contract job**: installs the Compact compiler, runs `npm run compile`, then `npm test` — a Vitest suite that
+  runs the compiled contract's circuits off-chain (no proof server needed) and asserts the private witnesses never
+  appear in public ledger state.
+- **Frontend job**: installs frontend deps, lints, runs `npm test` (Vitest + Testing Library), and builds.
  
 ---
  
@@ -312,9 +316,9 @@ npm run dev
 | | Link |
 | :-: | :--- |
 | 🔴 Live App | [proofveil.vercel.app](https://proofveil.vercel.app) |
-| 📜 Smart Contract | [Midnight Preview Explorer](https://explorer.midnight-ntwrk.preview.midnight.network/contracts/8d847cc316c8a4ac838da90f21d363aed24915cb2a9e607c1fd2741bd8d61dad) |
+| 📜 Smart Contract | [contracts/hello-world.compact](contracts/hello-world.compact) |
+| 📄 Level 3 Proposal | [PROPOSAL.md](PROPOSAL.md) |
 | 🎬 Demo Video | [Watch Demo](https://www.loom.com/share/0f142365d8a449e88ebf015f17c7834e) |
-| 📑 Slide Deck | [View Slides](https://docs.google.com/presentation/d/1VYTKVpM2CvhLRq6fH_V5ze996grY00ZoNPpNyMKzoac/edit?usp=sharing) |
 | 🐙 GitHub | [vaibhavi-0320/proofveil](https://github.com/vaibhavi-0320/proofveil) |
 | 📚 Midnight Docs | [docs.midnight.network](https://docs.midnight.network) |
 | 👛 Lace Wallet | [lace.io](https://www.lace.io) |
@@ -326,7 +330,7 @@ npm run dev
  
 <br/>
  
-*Built for the Midnight Hackathon — Identity & Governance Track*
+*Built for the Midnight Hackathon — Level 3, Confidential Credentials*
  
 [![Midnight](https://img.shields.io/badge/Built_on-Midnight-7c3aed?style=for-the-badge&logoColor=white)](https://midnight.network)
 [![ZK](https://img.shields.io/badge/Powered_by-Zero_Knowledge_Proofs-5b21b6?style=for-the-badge&logoColor=white)](https://docs.midnight.network)
@@ -336,4 +340,3 @@ npm run dev
 <br/>
  
 </div>
- 

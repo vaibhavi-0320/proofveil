@@ -15,7 +15,7 @@
     "proof-server:start": "docker compose up -d",
     "proof-server:stop": "docker compose down",
     "clean": "rm -rf contracts/managed deployment.json",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run"
   },
   "dependencies": {
     "@midnight-ntwrk/compact-js": "2.4.0",
@@ -41,7 +41,9 @@
     "@types/node": "^22.0.0",
     "@types/ws": "^8.18.1",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite-plugin-node-polyfills": "^0.28.0",
+    "vitest": "^3.2.4"
   },
   "engines": {
     "node": ">=22.0.0"

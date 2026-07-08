@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { X, ChevronRight, Wallet, ShieldCheck, ExternalLink, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import {
+  connectWallet,
+  getInjectedWallet,
+  WalletConnectionRejectedError,
+  WalletNotFoundError,
+} from "@/midnight/wallet";
 
 interface ConnectWalletModalProps {
   open: boolean;
@@ -8,41 +14,22 @@ interface ConnectWalletModalProps {
   onConnect: (address: string) => void;
 }
 
-// Lace Wallet injects window.cardano.lace
-declare global {
-  interface Window {
-    cardano?: {
-      lace?: {
-        name: string;
-        icon: string;
-        enable: () => Promise<{
-          getUsedAddresses: () => Promise<string[]>;
-          getUnusedAddresses: () => Promise<string[]>;
-          getBalance: () => Promise<string>;
-        }>;
-        isEnabled: () => Promise<boolean>;
-      };
-    };
-  }
-}
-
 type State = "idle" | "connecting" | "connected" | "no-extension" | "error";
 
 const ConnectWalletModal = ({ open, onClose, onConnect }: ConnectWalletModalProps) => {
   const [state, setState] = useState<State>("idle");
   const [address, setAddress] = useState("");
-  const [balance, setBalance] = useState("—");
   const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
 
-  // Detect Lace on mount
+  // Detect the Midnight Lace wallet extension on mount
   const [laceInstalled, setLaceInstalled] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!open) return;
     // Give the extension a moment to inject itself
     const timeout = setTimeout(() => {
-      setLaceInstalled(!!window.cardano?.lace);
+      setLaceInstalled(!!getInjectedWallet());
     }, 300);
     return () => clearTimeout(timeout);
   }, [open]);
@@ -50,7 +37,7 @@ const ConnectWalletModal = ({ open, onClose, onConnect }: ConnectWalletModalProp
   if (!open) return null;
 
   const handleConnect = async () => {
-    if (!window.cardano?.lace) {
+    if (!getInjectedWallet()) {
       setState("no-extension");
       return;
     }
@@ -59,42 +46,20 @@ const ConnectWalletModal = ({ open, onClose, onConnect }: ConnectWalletModalProp
     setErrorMsg("");
 
     try {
-      const api = await window.cardano.lace.enable();
-
-      // Get address
-      const usedAddresses = await api.getUsedAddresses();
-      const unusedAddresses = await api.getUnusedAddresses();
-      const allAddresses = [...usedAddresses, ...unusedAddresses];
-      const addr = allAddresses[0] ?? "addr1...unknown";
-
-      // Get balance (returned in lovelace as hex)
-      let balanceAda = "—";
-      try {
-        const rawBalance = await api.getBalance();
-        // rawBalance is CBOR-encoded lovelace value (hex) — convert roughly
-        const lovelace = parseInt(rawBalance, 16);
-        if (!isNaN(lovelace)) {
-          balanceAda = (lovelace / 1_000_000).toLocaleString(undefined, {
-            maximumFractionDigits: 2,
-          });
-        }
-      } catch {
-        balanceAda = "—";
-      }
-
-      // Shorten address for display
-      const shortAddr =
-        addr.length > 12
-          ? `${addr.slice(0, 8)}...${addr.slice(-6)}`
-          : addr;
+      const { state: walletState } = await connectWallet();
+      const addr = walletState.address;
+      const shortAddr = addr.length > 12 ? `${addr.slice(0, 8)}...${addr.slice(-6)}` : addr;
 
       setAddress(shortAddr);
-      setBalance(balanceAda);
       setState("connected");
       onConnect(addr);
     } catch (err: unknown) {
+      if (err instanceof WalletNotFoundError) {
+        setState("no-extension");
+        return;
+      }
       const message =
-        err instanceof Error
+        err instanceof WalletConnectionRejectedError || err instanceof Error
           ? err.message
           : "Connection was rejected. Please try again.";
       setErrorMsg(message.slice(0, 120));
@@ -110,7 +75,6 @@ const ConnectWalletModal = ({ open, onClose, onConnect }: ConnectWalletModalProp
   const handleDisconnect = () => {
     setState("idle");
     setAddress("");
-    setBalance("—");
     onConnect("");
   };
 
@@ -146,7 +110,7 @@ const ConnectWalletModal = ({ open, onClose, onConnect }: ConnectWalletModalProp
                     Lace Wallet Connected
                   </h2>
                   <p className="text-on-surface-variant text-sm">
-                    Identity linked via Lace Secure Tunnel
+                    Identity linked via Midnight's dApp connector
                   </p>
                 </div>
 
@@ -166,11 +130,10 @@ const ConnectWalletModal = ({ open, onClose, onConnect }: ConnectWalletModalProp
                   </div>
                   <div className="col-span-2 bg-surface-container-lowest/50 p-4 rounded-lg ghost-border text-left">
                     <span className="block text-[10px] text-on-surface-variant uppercase tracking-wider font-label mb-1">
-                      Balance
+                      Network
                     </span>
                     <span className="block text-lg font-medium text-on-surface">
-                      {balance}{" "}
-                      <span className="text-on-surface-variant text-xs">ADA</span>
+                      Midnight Preprod
                     </span>
                   </div>
                 </div>
@@ -218,8 +181,8 @@ const ConnectWalletModal = ({ open, onClose, onConnect }: ConnectWalletModalProp
                     Connect Your Wallet
                   </h1>
                   <p className="text-on-surface-variant text-sm leading-relaxed">
-                    Proofveil uses Lace Wallet to authenticate your identity on the Midnight
-                    Network via a zero-knowledge handshake.
+                    Proofveil uses the Midnight Lace Wallet to authenticate your identity and sign
+                    zero-knowledge proofs on the Midnight Network.
                   </p>
                 </div>
 
@@ -307,7 +270,7 @@ const ConnectWalletModal = ({ open, onClose, onConnect }: ConnectWalletModalProp
                           Lace Wallet
                         </span>
                         <span className="block text-xs text-on-surface-variant mt-0.5">
-                          Cardano · Midnight Network
+                          Midnight Network
                         </span>
                       </div>
                     </div>

@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AppSidebar from "@/components/AppSidebar";
 import { useWalletGate } from "@/hooks/useWalletGate";
 import { toast } from "sonner";
 import { Fingerprint, BarChart3, ShieldCheck, ShieldX, Loader2 } from "lucide-react";
+import { connectWallet } from "@/midnight/wallet";
+import { connectContract, CONTRACT_ADDRESS } from "@/midnight/contract";
+import { loadProofRecords, type ProofRecord } from "@/types/credential";
 
 interface VerificationResult {
   hash: string;
@@ -13,55 +16,69 @@ interface VerificationResult {
   contract: string;
 }
 
+function fromHex(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  return bytes;
+}
+
 const Verify = () => {
   useWalletGate();
-  const [hash, setHash] = useState("");
+  const [records, setRecords] = useState<ProofRecord[]>([]);
+  const [selectedLabel, setSelectedLabel] = useState("");
+  const [documentHex, setDocumentHex] = useState("");
+  const [saltHex, setSaltHex] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [result, setResult] = useState<null | "valid" | "invalid">(null);
   const [verificationData, setVerificationData] = useState<VerificationResult | null>(null);
 
+  useEffect(() => {
+    setRecords(loadProofRecords());
+  }, []);
+
+  const selectRecord = (label: string) => {
+    setSelectedLabel(label);
+    const record = records.find((r) => r.label === label);
+    if (record) {
+      setDocumentHex(record.document);
+      setSaltHex(record.salt);
+    }
+    setResult(null);
+  };
+
   const handleAudit = async () => {
-    if (!hash.trim()) {
-      toast.error("Please enter a record hash");
+    if (!documentHex.trim() || !saltHex.trim()) {
+      toast.error("Select a saved credential, or paste a document + salt hash pair");
       return;
     }
     setVerifying(true);
     setResult(null);
     setVerificationData(null);
-    await new Promise((r) => setTimeout(r, 2500));
-    setVerifying(false);
-    
-    // Check localStorage for real submitted records
-    const stored = localStorage.getItem("proofveil_records");
-    const records = stored ? JSON.parse(stored) : [];
-    const found = records.find((r: any) => r.hash === hash.trim());
-    
-    if (found) {
+
+    try {
+      const wallet = await connectWallet();
+      const contract = await connectContract(wallet);
+      const tx = await contract.verifyCredential(fromHex(documentHex.trim()), fromHex(saltHex.trim()));
+
       setResult("valid");
       setVerificationData({
-        hash: found.hash,
+        hash: `0x${documentHex.trim()}`,
         status: "VERIFIED",
-        block: String(Math.floor(Math.random() * 900000) + 287000),
-        timestamp: found.timestamp,
-        network: "Midnight Preview Network",
-        contract: "e0a4f4438586865881cf630942c2fff60a17dfe7dab673d34a6afd94f8958dcc"
-      });
-      toast.success("ZK Proof verified — record found in Proofveil");
-    } else if (hash.trim().startsWith("0x") && hash.trim().length === 66) {
-      // Valid format but not in local storage — may exist on-chain
-      setResult("valid");
-      setVerificationData({
-        hash: hash.trim(),
-        status: "ON-CHAIN",
-        block: String(Math.floor(Math.random() * 900000) + 287000),
+        block: String(tx.blockHeight),
         timestamp: new Date().toLocaleString(),
-        network: "Midnight Preview Network",
-        contract: "e0a4f4438586865881cf630942c2fff60a17dfe7dab673d34a6afd94f8958dcc"
+        network: "Midnight Preprod",
+        contract: CONTRACT_ADDRESS ?? "not deployed",
       });
-      toast.success("Valid hash format — may exist on Midnight chain");
-    } else {
+      toast.success("ZK proof verified — credential matches an on-chain commitment", {
+        description: `Transaction: ${tx.txId}`,
+      });
+    } catch (error) {
       setResult("invalid");
-      toast.error("Hash not found — submit a record first to get a valid hash");
+      toast.error("Credential not found", {
+        description: error instanceof Error ? error.message : "This document/salt pair has no matching on-chain commitment.",
+      });
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -81,28 +98,59 @@ const Verify = () => {
             </div>
             <h1 className="text-4xl md:text-5xl font-medium tracking-tight text-on-surface font-headline">Audit Integrity</h1>
             <p className="text-on-surface-variant text-lg max-w-md mx-auto">
-              Verify the zero-knowledge validity of any record hash within the Proofveil ecosystem.
+              Prove a credential is valid without revealing it. Verifying re-derives the same commitment
+              from your document and salt and checks it on-chain — the document itself is never disclosed.
             </p>
           </header>
 
           {/* Audit Search */}
           <div className="bg-surface-container p-8 rounded-xl ghost-border shadow-2xl animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
             <div className="space-y-6">
+              {records.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-[11px] uppercase tracking-widest text-on-surface-variant font-semibold">Your Saved Credentials</label>
+                  <select
+                    value={selectedLabel}
+                    onChange={(e) => selectRecord(e.target.value)}
+                    className="w-full bg-surface-container-lowest ring-1 ring-outline-variant/40 rounded-lg py-3 px-4 text-on-surface focus:ring-primary focus:ring-2 transition-all border-0"
+                  >
+                    <option value="">Select a credential you submitted...</option>
+                    {records.map((r) => (
+                      <option key={r.label + r.timestamp} value={r.label}>
+                        {r.label} — {new Date(r.timestamp).toLocaleString()}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="space-y-2">
-                <label className="text-[11px] uppercase tracking-widest text-on-surface-variant font-semibold">Enter Record Hash</label>
+                <label className="text-[11px] uppercase tracking-widest text-on-surface-variant font-semibold">Document Hash (hex)</label>
                 <div className="relative group">
                   <input
                     type="text"
-                    value={hash}
-                    onChange={(e) => { setHash(e.target.value); setResult(null); }}
+                    value={documentHex}
+                    onChange={(e) => { setDocumentHex(e.target.value); setResult(null); }}
                     className="w-full bg-surface-container-lowest ring-[0.5px] ring-outline-variant/40 rounded-lg px-4 py-4 text-primary font-mono focus:ring-1 focus:ring-primary focus:outline-none transition-all placeholder:text-outline/50 border-0"
-                    placeholder="0x72a...d3e"
+                    placeholder="64 hex characters"
                   />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2">
                     <Fingerprint className="w-5 h-5 text-outline/40" />
                   </div>
                 </div>
               </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] uppercase tracking-widest text-on-surface-variant font-semibold">Salt (hex)</label>
+                <input
+                  type="text"
+                  value={saltHex}
+                  onChange={(e) => { setSaltHex(e.target.value); setResult(null); }}
+                  className="w-full bg-surface-container-lowest ring-[0.5px] ring-outline-variant/40 rounded-lg px-4 py-4 text-primary font-mono focus:ring-1 focus:ring-primary focus:outline-none transition-all placeholder:text-outline/50 border-0"
+                  placeholder="64 hex characters"
+                />
+              </div>
+
               <button
                 onClick={handleAudit}
                 disabled={verifying}
@@ -118,7 +166,7 @@ const Verify = () => {
           {verifying && (
             <div className="flex items-center justify-center gap-3 py-4 text-on-surface-variant/60 animate-fade-in-up">
               <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              <span className="text-sm font-medium tracking-tight">Scanning Midnight Network...</span>
+              <span className="text-sm font-medium tracking-tight">Generating proof and querying Midnight Network...</span>
             </div>
           )}
 
@@ -134,14 +182,14 @@ const Verify = () => {
                       <p className="text-sm text-on-surface-variant mt-1">Record verified on ledger</p>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-4">
                     {/* Hash */}
                     <div className="bg-surface-container-lowest rounded-lg p-4 border border-outline-variant/20">
                       <p className="text-[10px] uppercase tracking-widest text-on-surface-variant/60 mb-2">Hash</p>
                       <code className="text-sm font-mono text-primary break-all">{verificationData.hash}</code>
                     </div>
-                    
+
                     {/* Status, Block, Timestamp */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="bg-surface-container-lowest rounded-lg p-3 border border-outline-variant/20">
@@ -157,7 +205,7 @@ const Verify = () => {
                         <p className="text-sm font-mono text-on-surface text-right">{verificationData.timestamp}</p>
                       </div>
                     </div>
-                    
+
                     {/* Network and Contract */}
                     <div className="grid grid-cols-1 gap-4">
                       <div className="bg-surface-container-lowest rounded-lg p-4 border border-outline-variant/20">
@@ -182,7 +230,7 @@ const Verify = () => {
                       <p className="text-sm text-on-surface-variant mt-1">CODE: 404_NF</p>
                     </div>
                   </div>
-                  <p className="text-sm text-on-surface-variant">The provided hash does not correspond to a valid commitment on the ledger.</p>
+                  <p className="text-sm text-on-surface-variant">This document/salt pair does not correspond to a valid commitment on the ledger.</p>
                 </div>
               ) : null}
             </>
@@ -192,11 +240,11 @@ const Verify = () => {
           <div className="grid grid-cols-3 gap-8 py-8 border-t border-outline-variant/20">
             <div className="space-y-1">
               <span className="block text-[10px] text-on-surface-variant uppercase tracking-widest">Network</span>
-              <span className="text-sm font-medium text-on-surface">Midnight Testnet V4</span>
+              <span className="text-sm font-medium text-on-surface">Midnight Preprod</span>
             </div>
             <div className="space-y-1 text-center">
-              <span className="block text-[10px] text-on-surface-variant uppercase tracking-widest">Efficiency</span>
-              <span className="text-sm font-medium text-on-surface">99.98% Uptime</span>
+              <span className="block text-[10px] text-on-surface-variant uppercase tracking-widest">Circuit</span>
+              <span className="text-sm font-medium text-on-surface">verifyCredential</span>
             </div>
             <div className="space-y-1 text-right">
               <span className="block text-[10px] text-on-surface-variant uppercase tracking-widest">Protocol</span>

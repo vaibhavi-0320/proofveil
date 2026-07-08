@@ -4,13 +4,9 @@ import { useWalletGate } from "@/hooks/useWalletGate";
 import { SkeletonCard, SkeletonRow } from "@/components/SkeletonLoader";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import { toast } from "sonner";
-
-interface Record {
-  filename: string;
-  hash: string;
-  timestamp: string;
-  status: string;
-}
+import { connectWallet } from "@/midnight/wallet";
+import { connectContract, CONTRACT_ADDRESS } from "@/midnight/contract";
+import { loadProofRecords, type ProofRecord } from "@/types/credential";
 
 const grants = [
   { icon: "🏥", name: "St. Jude Research", detail: "Read-only Genomic access • Expires in 2h" },
@@ -20,21 +16,30 @@ const grants = [
 const Dashboard = () => {
   useWalletGate();
   const [loading, setLoading] = useState(true);
-  const [records, setRecords] = useState<Record[]>([]);
+  const [records, setRecords] = useState<ProofRecord[]>([]);
+  const [verifiedCount, setVerifiedCount] = useState<bigint | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const stored = localStorage.getItem("proofveil_records");
-      if (stored) {
-        try {
-          setRecords(JSON.parse(stored));
-        } catch (e) {
-          setRecords([]);
-        }
-      }
+      setRecords(loadProofRecords());
       setLoading(false);
     }, 1200);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Local submission history above is per-device only - the chain has no
+  // notion of "your" records. This pulls the one thing that IS real, public
+  // ledger state: the total count of successful verifications so far.
+  useEffect(() => {
+    (async () => {
+      try {
+        const wallet = await connectWallet();
+        const contract = await connectContract(wallet);
+        setVerifiedCount(await contract.getVerifiedCount());
+      } catch {
+        setVerifiedCount(null);
+      }
+    })();
   }, []);
 
   const truncateHash = (hash: string): string => {
@@ -48,10 +53,10 @@ const Dashboard = () => {
   };
 
   const metrics = [
-    { label: "Your Records", value: String(records.length), icon: "🛡️", trend: "Secured on Midnight Preview", trendColor: "text-secondary" },
-    { label: "Verified Hashes", value: String(records.length), icon: "✅", trend: "SHA-256 cryptographic proof", trendColor: "text-secondary" },
-    { label: "Network", value: "Preview", icon: "⚙️", trend: "Midnight Blockchain", trendColor: "text-primary" },
-    { label: "Contract", value: "Live", icon: "🔑", trend: "9308246b...865a4", trendColor: "text-secondary" },
+    { label: "Your Submissions", value: String(records.length), icon: "🛡️", trend: "Local device history", trendColor: "text-secondary" },
+    { label: "Total Verifications", value: verifiedCount === null ? "—" : verifiedCount.toString(), icon: "✅", trend: "Live from public ledger", trendColor: "text-secondary" },
+    { label: "Network", value: "Preprod", icon: "⚙️", trend: "Midnight Blockchain", trendColor: "text-primary" },
+    { label: "Contract", value: CONTRACT_ADDRESS ? "Deployed" : "Not set", icon: "🔑", trend: CONTRACT_ADDRESS ? truncateHash(CONTRACT_ADDRESS) : "set VITE_CONTRACT_ADDRESS", trendColor: "text-secondary" },
   ];
 
   return (
@@ -143,26 +148,26 @@ const Dashboard = () => {
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1 min-w-0">
-                        <div className="text-xs text-on-surface-variant uppercase tracking-widest mb-1">Filename</div>
-                        <p className="text-sm font-medium text-on-surface truncate">{record.filename}</p>
+                        <div className="text-xs text-on-surface-variant uppercase tracking-widest mb-1">Label</div>
+                        <p className="text-sm font-medium text-on-surface truncate">{record.label}</p>
                       </div>
                       <span className="ml-2 px-2 py-1 rounded text-[10px] font-bold uppercase bg-secondary/10 text-secondary border border-secondary/20 whitespace-nowrap">
-                        {record.status}
+                        {record.txId ? "SECURED" : "PENDING"}
                       </span>
                     </div>
 
                     <div className="mb-4">
-                      <div className="text-xs text-on-surface-variant uppercase tracking-widest mb-1">Hash</div>
-                      <code className="text-xs font-mono text-primary break-all">{truncateHash(record.hash)}</code>
+                      <div className="text-xs text-on-surface-variant uppercase tracking-widest mb-1">Document Hash</div>
+                      <code className="text-xs font-mono text-primary break-all">{truncateHash(record.document)}</code>
                     </div>
 
                     <div className="mb-4">
                       <div className="text-xs text-on-surface-variant uppercase tracking-widest mb-1">Timestamp</div>
-                      <p className="text-xs text-on-surface">{record.timestamp}</p>
+                      <p className="text-xs text-on-surface">{new Date(record.timestamp).toLocaleString()}</p>
                     </div>
 
                     <button
-                      onClick={() => copyToClipboard(record.hash)}
+                      onClick={() => copyToClipboard(record.document)}
                       className="w-full px-4 py-2 text-xs font-medium text-primary border border-primary/30 rounded-lg hover:bg-primary/5 transition-all active:scale-95"
                     >
                       📋 Copy Hash

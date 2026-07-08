@@ -5,3 +5,5 @@ dist/
 .midnight-seed
 *.seed
 deployment.json
+.proofveil-credentials.json
+midnight-level-db/

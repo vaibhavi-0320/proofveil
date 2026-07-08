@@ -32,16 +32,16 @@ import { parseWalletSeed } from './utils/wallet-seed.js';
 // @ts-expect-error Required for wallet sync
 globalThis.WebSocket = WebSocket;
 
-// Set network to preview
-setNetworkId('preview');
+// Set network to preprod
+setNetworkId('preprod');
 
 // Preprod network configuration
 const CONFIG = {
-  indexer: 'https://indexer.preview.midnight.network/api/v3/graphql',
-  indexerWS: 'wss://indexer.preview.midnight.network/api/v3/graphql/ws',
-  node: 'https://rpc.preview.midnight.network',
+  indexer: 'https://indexer.preprod.midnight.network/api/v3/graphql',
+  indexerWS: 'wss://indexer.preprod.midnight.network/api/v3/graphql/ws',
+  node: 'https://rpc.preprod.midnight.network',
   proofServer: 'http://127.0.0.1:6300',
-  faucetUrl: 'https://faucet.preview.midnight.network/',
+  faucetUrl: 'https://faucet.preprod.midnight.network/',
 };
 
 // ─── Proof Server Health Check ─────────────────────────────────────────────────
@@ -340,7 +340,7 @@ async function main() {
 
       // Save seed for retry
       fs.writeFileSync('.midnight-seed', seed, { mode: 0o600 });
-      const partialInfo = { address, network: 'preview', status: 'proof_server_unavailable' };
+      const partialInfo = { address, network: 'preprod', status: 'proof_server_unavailable' };
       fs.writeFileSync('deployment.json', JSON.stringify(partialInfo, null, 2));
       console.log('  Wallet saved to .midnight-seed and deployment.json\n');
 
@@ -387,7 +387,7 @@ async function main() {
           console.log('  └──────────────────────────────────────────────────────────────┘\n');
 
           fs.writeFileSync('.midnight-seed', seed, { mode: 0o600 });
-          const partialInfo = { address, network: 'preview', status: 'proof_server_error' };
+          const partialInfo = { address, network: 'preprod', status: 'proof_server_error' };
           fs.writeFileSync('deployment.json', JSON.stringify(partialInfo, null, 2));
           console.log('  Wallet saved to .midnight-seed and deployment.json\n');
 
@@ -433,7 +433,7 @@ async function main() {
             fs.writeFileSync('.midnight-seed', seed, { mode: 0o600 });
             const partialInfo = {
               address,
-              network: 'preview',
+              network: 'preprod',
               status: 'pending_dust',
               lastAttempt: new Date().toISOString(),
             };
@@ -462,7 +462,7 @@ async function main() {
     fs.writeFileSync('.midnight-seed', seed, { mode: 0o600 });
     const deploymentInfo = {
       contractAddress,
-      network: 'preview',
+      network: 'preprod',
       deployedAt: new Date().toISOString(),
     };
 

@@ -9,6 +9,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { WebSocket } from 'ws';
 import * as Rx from 'rxjs';
 import { Buffer } from 'buffer';
+import { createHash, randomBytes } from 'node:crypto';
 
 // Midnight SDK imports
 import { findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
@@ -156,6 +157,37 @@ async function createProviders(walletCtx: ReturnType<typeof createWallet> extend
   };
 }
 
+// ─── Local Credential Store ─────────────────────────────────────────────────────
+// Keeps the private (document, salt) pairs you've issued so you can re-run
+// verifyCredential later without retyping the salt. Never touches the ledger.
+
+const CREDENTIALS_FILE = '.proofveil-credentials.json';
+
+interface StoredCredential {
+  label: string;
+  document: string; // hex, 32 bytes
+  salt: string; // hex, 32 bytes
+}
+
+function loadCredentials(): StoredCredential[] {
+  if (!fs.existsSync(CREDENTIALS_FILE)) return [];
+  try {
+    return JSON.parse(fs.readFileSync(CREDENTIALS_FILE, 'utf-8'));
+  } catch {
+    return [];
+  }
+}
+
+function saveCredential(entry: StoredCredential): void {
+  const all = loadCredentials();
+  all.push(entry);
+  fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(all, null, 2), { mode: 0o600 });
+}
+
+function documentHashFor(text: string): Buffer {
+  return createHash('sha256').update(text, 'utf-8').digest();
+}
+
 // ─── Main CLI ──────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -208,20 +240,25 @@ async function main() {
     let running = true;
     while (running) {
       console.log('─── Menu ───────────────────────────────────────────────────────');
-      console.log('  1. Store a message');
-      console.log('  2. Read current message');
-      console.log('  3. Check wallet balance');
-      console.log('  4. Exit\n');
+      console.log('  1. Submit a credential (issue)');
+      console.log('  2. Verify a credential (prove, without revealing it)');
+      console.log('  3. Check verified count (public ledger state)');
+      console.log('  4. Check wallet balance');
+      console.log('  5. Exit\n');
 
       const choice = await rl.question('  Your choice: ');
 
       switch (choice.trim()) {
         case '1': {
-          const message = await rl.question('  Enter your message: ');
+          const label = await rl.question('  Enter a label for this credential (e.g. document name): ');
+          const document = documentHashFor(label);
+          const salt = randomBytes(32);
           console.log('\n  Submitting transaction (this may take 30-60 seconds)...');
           try {
-            const tx = await deployed.callTx.storeMessage(message);
-            console.log(`\n  ✅ Message stored: "${message}"`);
+            const tx = await deployed.callTx.submitCredential(document, salt);
+            saveCredential({ label, document: document.toString('hex'), salt: salt.toString('hex') });
+            console.log(`\n  ✅ Credential issued for "${label}"`);
+            console.log(`  Commitment saved locally to ${CREDENTIALS_FILE} (never share this file)`);
             console.log(`  Transaction ID: ${tx.public.txId}`);
             console.log(`  Block height: ${tx.public.blockHeight}\n`);
           } catch (error) {
@@ -231,15 +268,40 @@ async function main() {
         }
 
         case '2': {
-          console.log('\n  Reading message from blockchain...');
+          const stored = loadCredentials();
+          if (stored.length === 0) {
+            console.log('\n  No local credentials found. Issue one first (option 1).\n');
+            break;
+          }
+          console.log('\n  Your locally-saved credentials:');
+          stored.forEach((c, i) => console.log(`    [${i}] ${c.label}`));
+          const idx = Number((await rl.question('\n  Verify which one? ')).trim());
+          const entry = stored[idx];
+          if (!entry) {
+            console.log('\n  ❌ Invalid selection.\n');
+            break;
+          }
+          console.log('\n  Generating proof and submitting (this may take 30-60 seconds)...');
+          try {
+            const tx = await deployed.callTx.verifyCredential(Buffer.from(entry.document, 'hex'), Buffer.from(entry.salt, 'hex'));
+            console.log(`\n  ✅ Credential "${entry.label}" verified — proof accepted, document never revealed.`);
+            console.log(`  Transaction ID: ${tx.public.txId}`);
+            console.log(`  Block height: ${tx.public.blockHeight}\n`);
+          } catch (error) {
+            console.error('\n  ❌ Verification failed:', error instanceof Error ? error.message : error);
+          }
+          break;
+        }
+
+        case '3': {
+          console.log('\n  Reading verified count from blockchain...');
           try {
             const contractState = await providers.publicDataProvider.queryContractState(deployment.contractAddress);
             if (contractState) {
               const ledgerState = HelloWorld.ledger(contractState.data);
-              const message = Buffer.from(ledgerState.message).toString();
-              console.log(`\n  📋 Current message: "${message}"\n`);
+              console.log(`\n  📋 Total verifications: ${ledgerState.verifiedCount}\n`);
             } else {
-              console.log('\n  📋 No message found (contract state empty)\n');
+              console.log('\n  📋 No contract state found\n');
             }
           } catch (error) {
             console.error('\n  ❌ Failed:', error instanceof Error ? error.message : error);
@@ -247,7 +309,7 @@ async function main() {
           break;
         }
 
-        case '3': {
+        case '4': {
           console.log('\n  Checking balance...');
           const currentState = await Rx.firstValueFrom(walletCtx.wallet.state().pipe(Rx.filter((s) => s.isSynced)));
           const currentBalance = currentState.unshielded.balances[unshieldedToken().raw] ?? 0n;
@@ -257,13 +319,13 @@ async function main() {
           break;
         }
 
-        case '4':
+        case '5':
           running = false;
           console.log('\n  👋 Goodbye!\n');
           break;
 
         default:
-          console.log('\n  ❌ Invalid choice. Please enter 1-4.\n');
+          console.log('\n  ❌ Invalid choice. Please enter 1-5.\n');
       }
     }
 

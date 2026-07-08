@@ -2,6 +2,13 @@ import { useState, useRef } from "react";
 import AppSidebar from "@/components/AppSidebar";
 import { useWalletGate } from "@/hooks/useWalletGate";
 import { toast } from "sonner";
+import { connectWallet } from "@/midnight/wallet";
+import { connectContract } from "@/midnight/contract";
+import { saveProofRecord } from "@/types/credential";
+
+function toHex(bytes: Uint8Array): string {
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 const Submit = () => {
   useWalletGate();
@@ -16,14 +23,15 @@ const Submit = () => {
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
-  // Generate SHA256 hash from input
-  const generateHash = async (input: string): Promise<string> => {
+  // Generate a SHA-256 hash of the record - this becomes the private
+  // `document` witness passed into the submitCredential circuit. The file
+  // never leaves the browser; only the commitment the circuit derives from
+  // this hash is ever disclosed on-chain.
+  const generateHash = async (input: string): Promise<Uint8Array> => {
     const encoder = new TextEncoder();
     const data = encoder.encode(input);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    return '0x' + hashHex;
+    return new Uint8Array(hashBuffer);
   };
 
   const toggleClassification = (tag: string) => {
@@ -41,41 +49,39 @@ const Submit = () => {
     setEncrypted(false);
     setRecordHash(null);
 
-    // Simulate encryption and generate hash
-    await new Promise((r) => setTimeout(r, 3000));
-    const inputData = `${recordType}|${title}|${description}|${file?.name || ''}`;
-    const hash = await generateHash(inputData);
-    setRecordHash(hash);
-    setEncrypting(false);
-    setEncrypted(true);
-    
-    // Save record to localStorage
-    const timestamp = new Date().toLocaleString('en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true
-    });
-    
-    const newRecord = {
-      filename: file?.name || title,
-      hash: hash,
-      timestamp: timestamp,
-      status: "SECURED"
-    };
-    
-    const existingRecords = localStorage.getItem("proofveil_records");
-    const records = existingRecords ? JSON.parse(existingRecords) : [];
-    records.unshift(newRecord);
-    localStorage.setItem("proofveil_records", JSON.stringify(records));
-    
-    const shortHash = hash.slice(0, 10) + '...' + hash.slice(-8);
-    toast.success("Secured on Midnight Preprod Network", {
-      description: `Record Hash: ${shortHash}`,
-    });
+    try {
+      const inputData = `${recordType}|${title}|${description}|${file?.name || ''}`;
+      const document = await generateHash(inputData);
+      const salt = crypto.getRandomValues(new Uint8Array(32));
+
+      const wallet = await connectWallet();
+      const contract = await connectContract(wallet);
+      const tx = await contract.submitCredential(document, salt);
+
+      const hashHex = '0x' + toHex(document);
+      setRecordHash(hashHex);
+      setEncrypting(false);
+      setEncrypted(true);
+
+      saveProofRecord({
+        label: file?.name || title,
+        document: toHex(document),
+        salt: toHex(salt),
+        timestamp: new Date().toISOString(),
+        txId: tx.txId,
+        blockHeight: tx.blockHeight,
+      });
+
+      const shortHash = hashHex.slice(0, 10) + '...' + hashHex.slice(-8);
+      toast.success("Secured on Midnight Preprod Network", {
+        description: `Record Hash: ${shortHash}`,
+      });
+    } catch (error) {
+      setEncrypting(false);
+      toast.error("Failed to submit credential", {
+        description: error instanceof Error ? error.message : "Connect your Lace wallet and try again.",
+      });
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -212,7 +218,7 @@ const Submit = () => {
                   </button>
                   <p className="text-center text-xs text-on-surface-variant mt-4 font-mono uppercase tracking-widest opacity-60">
                     {encrypting
-                      ? "STATUS: ENCRYPTING VIA MIDNIGHT..."
+                      ? "STATUS: GENERATING ZK PROOF..."
                       : encrypted
                       ? "STATUS: ENCRYPTED ✓"
                       : "STATUS: READY"}

@@ -2,11 +2,33 @@ pragma language_version >= 0.16;
 
 import CompactStandardLibrary;
 
-// Public ledger state - visible on blockchain
-export ledger message: Opaque<"string">;
+// ── ProofVeil: Confidential Credentials ─────────────────────────────────
+//
+// A credential (in ProofVeil's case, a document hash) is never disclosed.
+// Only a one-way commitment to it is ever written to the ledger, and only
+// the fact that a later proof matches a previously-issued commitment is
+// ever observable on-chain.
 
-// Circuit to store a message on the blockchain
-// The message will be publicly visible
-export circuit storeMessage(customMessage: Opaque<"string">): [] {
-    message = disclose(customMessage);
+// PUBLIC — the set of commitments that have been issued as valid credentials.
+export ledger credentialCommitments: Map<Bytes<32>, Boolean>;
+
+// PUBLIC — a running count of successful verifications. Reveals that
+// verifications happened, never which credential or who performed them.
+export ledger verifiedCount: Counter;
+
+// Issue a credential. `document` and `salt` are PRIVATE witnesses: they are
+// never assigned to ledger state. Only their commitment (the hash of both)
+// is disclosed and stored.
+export circuit submitCredential(document: Bytes<32>, salt: Bytes<32>): [] {
+    const commitment = persistentHash<Vector<2, Bytes<32>>>([document, salt]);
+    credentialCommitments.insert(disclose(commitment), true);
+}
+
+// Prove a credential is valid without revealing it. Recomputes the same
+// commitment from the private witnesses and checks membership; the circuit
+// fails if the caller doesn't actually know a matching (document, salt).
+export circuit verifyCredential(document: Bytes<32>, salt: Bytes<32>): [] {
+    const commitment = persistentHash<Vector<2, Bytes<32>>>([document, salt]);
+    assert credentialCommitments.member(disclose(commitment)) "Credential not found";
+    verifiedCount.increment(1);
 }
